@@ -1,0 +1,617 @@
+---
+execute: 
+  echo: false
+  message: false
+  warning: false
+---
+
+# Case studies {#sec-case-studies}
+
+```{r}
+#| echo: false
+library(knitr)
+knit_print.gt <- function(x, ...) {
+  # Two steps to avoid most Quarto changes of my table styles: 
+  # 1. as_raw_html() to use table styles *inline*
+  # 2. wrap output in a div that resets all Quarto styles
+  stringr::str_c(
+    "<div style='all:initial';>\n", 
+    gt::as_raw_html(x), 
+    "\n</div>"
+  ) |> 
+    knitr::asis_output()
+}
+registerS3method(
+  "knit_print", 'gt_tbl', knit_print.gt, 
+  envir = asNamespace("gt") 
+  # important to overwrite {gt}s knit_print
+)
+```
+
+## Fitness pricing
+
+In this chapter we're going to build this Fitness pricing table I found [online](https://codepen.io/supacode/pen/ExjbmgG).
+It's not really a data table but it's a fun exercise to build this.
+
+```{r}
+library(tidyverse)
+library(gt)
+levels <- c('Standard', 'Popular', 'Golden', 'Ultimate')
+prices <- c(15, 25, 35, 50)
+names(prices) <- levels
+
+features <- c('Beginner Classes', 'Training Overview', 'Personal Training', 'Olympic Weightlifting', 'Foundation Training')
+
+dat <- tibble(
+  level = levels,
+  monthly_price = prices[levels],
+  features = list(features[1], features[1:2], features[1:3], features),
+  booking_link = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+)
+
+level_colors <- c(
+  Standard = "#c40d53",
+  Popular = "#26559b",
+  Golden = "#f90",
+  Ultimate =  "#0d833e"
+)
+
+```
+
+
+```{r}
+#| column: screen
+unnested_dat <- dat |>
+  unnest(features) |>
+  select(level, features)
+
+rearranged_data <- unnested_dat |>
+  mutate(in_level = TRUE)  |>
+  complete(
+    expand(unnested_dat, level, features),
+    fill = list(in_level = FALSE)
+  ) |>
+  mutate(
+    id = paste(level, features, sep = '_')
+  ) |>
+  pivot_wider(
+    id_cols = c(id, in_level),
+    names_from = level,
+    values_from = features
+  ) |>
+  select(-id) |>
+  mutate(across(.cols = -in_level, .fns = ~factor(., levels = features)))
+
+
+fontawesome_checkmark <- function(color) {
+  glue::glue(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="{color}"><!--! Font Awesome Pro 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M470.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L192 338.7 425.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>'
+  )
+}
+
+fontawesome_xmark <- function(color) {
+  glue::glue('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" fill="{color}" width="75%" height="75%"><!--! Font Awesome Pro 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M310.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L160 210.7 54.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L114.7 256 9.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 301.3 265.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L205.3 256 310.6 150.6z"/></svg>')
+}
+
+feature_tables <- character(length(levels))
+for (level in levels) {
+
+  #level <- 'Ultimate'
+  level_data <- rearranged_data |>
+    select(in_level, !!level) |>
+    filter(!is.na(!!sym(level))) |>
+    arrange(!!sym(level))
+
+  tbl <- level_data |>
+  mutate(
+    across(everything(), as.character),
+    in_level = ifelse(
+      parse_logical(in_level),
+      fontawesome_checkmark(level_colors[level]),
+      fontawesome_xmark(level_colors[level])
+    )
+  ) |>
+  gt() |>
+  fmt_markdown(columns = 'in_level') |>
+  cols_width(in_level ~ px(25), everything() ~ px(175)) |>
+  tab_options(
+    column_labels.hidden = TRUE,
+    table.font.names = 'Source Sans Pro',
+    table_body.border.top.style = 'none',
+    table.border.top.style = 'none',
+    table_body.border.bottom.style = 'none',
+    table.border.bottom.style = 'none',
+    table_body.hlines.style = 'none',
+  ) |>
+    as_raw_html()
+
+  feature_tables[which(level == levels)] <- tbl
+}
+
+tables_tib <- tibble(
+  level = levels,
+  table = feature_tables
+) |>
+  pivot_wider(names_from = level, values_from = table)
+
+price_tib <- tibble(
+  level = levels,
+  price = paste0('$<span style="font-size:40px;">', prices, '</span>/month')
+) |>
+  pivot_wider(names_from = level, values_from = price)
+
+
+style_links <- function(link, color) {
+  htmltools::a(
+      href = link,
+      "Book now",
+      style = glue::glue("border-radius: 5px;color: white;background-color: {color};border-radius: 5px;padding: 8px 20px;display: inline-block;text-decoration:none")
+  )
+}
+
+links_tib <- tibble(
+  level = levels,
+  level_colors = level_colors[level],
+  booking_link = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+) |>
+  mutate(
+    booking_link = map2(booking_link, level_colors, style_links),
+    booking_link = map_chr(booking_link, ~as.character(.x))
+  ) |>
+  select(-level_colors) |>
+  pivot_wider(names_from = level, values_from = booking_link)
+
+levels_text_size <- px(30)
+
+bind_rows(price_tib, tables_tib, links_tib) |>
+  mutate(dummy1 = '', .after = 1) |>
+  mutate(dummy2 = '', .after = 3) |>
+  mutate(dummy3 = '', .after = 5) |>
+  gt(id = 'my_tbl') |>
+  fmt_markdown(columns = everything()) |>
+  cols_align(align = 'center') |>
+  cols_label(
+    dummy1 = '',
+    dummy2 = '',
+    dummy3 = ''
+  ) |>
+  cols_width(
+    dummy1 ~ px(15),
+    dummy2 ~ px(15),
+    dummy3 ~ px(15)
+  ) |>
+  tab_style(
+    style = list(
+      cell_fill(color = level_colors['Standard']),
+      cell_text(color = 'white', weight = 'bold')
+    ),
+    locations = list(
+      cells_body(columns = 'Standard', rows = 1),
+      cells_column_labels(column = 'Standard')
+    )
+  ) |>
+  tab_style(
+    style = list(
+      cell_fill(color = level_colors['Popular']),
+      cell_text(color = 'white', weight = 'bold')
+    ),
+    locations = list(
+      cells_body(columns = 'Popular', rows = 1),
+      cells_column_labels(column = 'Popular')
+    )
+  ) |>
+  tab_style(
+    style = list(
+      cell_fill(color = level_colors['Golden']),
+      cell_text(color = 'white', weight = 'bold')
+    ),
+    locations = list(
+      cells_body(columns = 'Golden', rows = 1),
+      cells_column_labels(column = 'Golden')
+    )
+  ) |>
+  tab_style(
+    style = list(
+      cell_fill(color = level_colors['Ultimate']),
+      cell_text(color = 'white', weight = 'bold')
+    ),
+    locations = list(
+      cells_body(columns = 'Ultimate', rows = 1),
+      cells_column_labels(column = 'Ultimate')
+    )
+  ) |>
+  tab_style(
+    style = cell_text(size = levels_text_size),
+    locations = cells_column_labels()
+  ) |>
+  tab_style(
+    style = list(cell_fill(color = 'white')),
+    locations = list(
+      cells_body(columns = contains('dummy')),
+      cells_column_labels(columns = contains('dummy'))
+    )
+  ) |>
+  tab_style(
+    style = cell_borders(sides = 'bottom', color = '#D3D3D3'),
+    locations = cells_body(rows = 3, columns = c(1, 3, 5, 7))
+  ) |>
+  tab_options(
+    table_body.border.top.style = 'none',
+    table.border.top.style = 'none',
+    table_body.border.bottom.style = 'none',
+    table.border.bottom.style = 'none',
+    table_body.hlines.style = 'none',
+    table_body.vlines.style = 'solid',
+    column_labels.border.top.style = 'none',
+    column_labels.border.bottom.style = 'none',
+    column_labels.border.lr.style = 'solid', # not working, set in css
+    column_labels.border.lr.width = px(1),
+    column_labels.padding = px(1),
+    data_row.padding = px(2),
+    table.font.names = 'Source Sans Pro',
+    heading.title.font.size = px(45),
+    heading.padding = px(10),
+    heading.border.bottom.style = 'none'
+  ) |>
+  tab_header(
+    title = 'Fitness Pricing Table'
+  ) |>
+  tab_footnote(
+    footnote = 'Design/Inspiration: @supacode | {gt} Remake: @rappa753',
+    placement = 'right'
+  ) |>
+  opt_css(
+    '.gt_footnote {
+      text-align: right; padding-top: 5px;
+    }
+
+    .gt_title {
+      font-family:"Oleo Script";
+    }
+
+    #my_tbl .gt_col_heading {
+      border-left-style:solid;
+      border-right-style:solid;
+    }
+    
+    #my_tbl thead, tbody, tfoot, tr, td, th {
+      border-color: inherit;
+      border-style: solid;
+      border-width: 0;
+    }
+    
+    
+    #my_tbl a {
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 5px rgba(0, 0, 0, 0.4);
+      }
+      &:active {
+        box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.4);
+      }
+    }
+
+
+
+    '
+  )
+
+```
+
+## NYT bestseller
+
+This one is a recreation of an awesome table [Tanya Shapiro](https://twitter.com/tanya_shapiro/status/1584616721251725312) made with `{ggplot2}`.
+It is a huge table.
+So you'll probably need to look at this on a large screen.
+But just to be safe.
+Here's a [screenshot of the table](img/screenshot_table.png) as well.
+
+
+```{r}
+library(tidyverse)
+library(gt)
+library(gtExtras)
+```
+
+
+```{r}
+nyt_dat <- readr::read_tsv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-05-10/nyt_full.tsv') |> 
+  mutate(decade = (year %/% 10) * 10) 
+```
+
+
+```{r}
+top5_authors_by_decade <- nyt_dat |> 
+  filter(between(year, 1960, 2019)) |> 
+  count(author, decade, sort = T, name = 'weeks') |> 
+  group_by(decade) |> 
+  slice_max(weeks, n = 5) |> 
+  ungroup()
+```
+
+
+```{r}
+find_best_book <- function(decade, author) {
+  best_books <- nyt_dat |> 
+    filter(decade == !!decade, author == !!author) |> 
+    count(title, sort = TRUE)
+  
+  best_books[[1, 'title']] |> str_to_title()
+}
+
+find_number_of_weeks_per_year <- function(decade, author){
+  nyt_dat |> 
+    filter(decade == !!decade, author == !!author) |> 
+    count(year, name = 'weeks') |> 
+    complete(tibble(year = decade:(decade + 9)), fill = list(weeks = 0)) |> 
+    arrange(year)  |> 
+    pull(weeks)
+}
+
+
+top5_authors_and_book_by_decade <- top5_authors_by_decade |> 
+  mutate(
+    best_book = map2_chr(decade, author, find_best_book),
+    sparkline_weeks = map2(decade, author, find_number_of_weeks_per_year)
+  )
+```
+
+
+```{r}
+image_links <- tibble(
+  author = top5_authors_and_book_by_decade |> pull(author) |> unique(),
+  img = c(
+    'https://images.gr-assets.com/authors/1327446818p8/77616.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/John_O%27Hara_cph.3b08576.jpg/1024px-John_O%27Hara_cph.3b08576.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/8/88/Taylor_caldwell_a.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Irving_Wallace%2C_1972.jpg/330px-Irving_Wallace%2C_1972.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/d/d6/Leon_Uris_%28cropped%29.jpg',
+    'https://images-na.ssl-images-amazon.com/images/I/41RMdx8BJHL.__01_SX120_CR0,0,120,120__.jpg',
+    'https://upload.wikimedia.org/wikipedia/en/a/a2/Robert_Ludlum_%281927-2001%29.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Herman_Wouk_%28cropped%29.jpg/330px-Herman_Wouk_%28cropped%29.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Agatha_Christie.png/330px-Agatha_Christie.png',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Frederick_Forsyth_-_01.jpg/375px-Frederick_Forsyth_-_01.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Stephen_King%2C_Comicon.jpg/330px-Stephen_King%2C_Comicon.jpg',
+    'https://images1.penguinrandomhouse.com/author/29599',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/James_Albert_Michener_%C2%B7_DN-SC-92-05368.JPEG/330px-James_Albert_Michener_%C2%B7_DN-SC-92-05368.JPEG',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Tom_Clancy_at_Burns_Library_cropped.jpg/330px-Tom_Clancy_at_Burns_Library_cropped.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Grisham_John_by_C_Harrison_.jpg/300px-Grisham_John_by_C_Harrison_.jpg',
+    'https://upload.wikimedia.org/wikipedia/en/7/70/Robert_James_Waller.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Mary_Higgins_Clark_at_the_Mazza_Museum.jpg/330px-Mary_Higgins_Clark_at_the_Mazza_Museum.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Dan_Brown_bookjacket_cropped.jpg/330px-Dan_Brown_bookjacket_cropped.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/1/1d/James_Patterson.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/a/af/Nicholas-Sparks-Autograph-1-4-06.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/David_Baldacci_-_2015_National_Book_Festival_%286%29.jpg/330px-David_Baldacci_-_2015_National_Book_Festival_%286%29.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Anthony_Doerr_%282015%29.jpg/330px-Anthony_Doerr_%282015%29.jpg'
+  )
+)
+
+full_dat <- top5_authors_and_book_by_decade |> 
+  left_join(image_links)
+
+```
+
+
+
+
+```{r}
+
+map2color<-function(x, pal = rev(RColorBrewer::brewer.pal(11, 'Spectral')), limits=NULL){
+    if(is.null(limits)) limits <- range(x)
+    pal[findInterval(x,seq(limits[1],limits[2],length.out=length(pal)+1), all.inside=TRUE)]
+}
+
+create_point_div <- function(color, size) {
+  glue::glue(
+    '<span style="height: {size}em;width: {size}em;background-color: {color};border-radius: 50%;margin-top:4px;display:inline-block;margin-left:2px;"></span>'
+  )
+}
+
+format_text <- function(weeks, author, best_book, colors) {
+  glue::glue(
+    '<span style = "color:white;font-weight:lighter;font-size:12pt;">{str_to_upper(weeks)} WEEKS ON THE LIST</span> {create_point_div(colors, 0.75)}',
+    '<br>',
+    '<span style = "color:white;font-weight:bold;font-size:22pt;">{author}</span>',
+    '<br>',
+    '<span style = "color:white;font-size:12pt;">{best_book}</span>'
+  )
+}
+```
+
+
+
+```{r}
+# can be higher than 52 bc of multiple books
+highest_week_count_per_year <- full_dat |> 
+  pull(sparkline_weeks) |> 
+  map_dbl(max) |>
+  max()
+create_sparkline <- function(sparkline) {
+  ggplot() +
+    geom_line(
+      mapping = aes(x = seq_along(sparkline), y = sparkline),
+      color = 'white',
+      size = 0.5
+    ) +
+    annotate(
+      'text',
+      x = c(1, 10),
+      y = sparkline[c(1, 10)],
+      label = sparkline[c(1, 10)],
+      color = 'white',
+      hjust = c(1.2, -0.2),
+      size = 2.5
+    ) +
+    coord_cartesian(xlim = c(-5, 15), ylim = c(0, highest_week_count_per_year)) +
+    theme_void() +
+    theme(plot.background = element_rect(fill = 'black'))
+}
+
+
+for (decade in seq(1960, 2010, 10)) {
+  decade_data <- full_dat |> filter(decade == !!decade)
+  
+  for (k in 1:5) {
+    p <- decade_data |> 
+      pluck('sparkline_weeks', k) |> 
+      create_sparkline()
+    
+    ggsave(
+      glue::glue('img/{decade}_{k}.png'),
+      plot = p,
+      height = 200,
+      width = 400,
+      unit = 'px'
+    )
+  }
+  
+}
+```
+
+
+```{r}
+
+create_decade_table <- function(decade, img_size = 75) {
+  full_dat |> 
+    mutate(color = map2color(weeks)) |> 
+    filter(decade == !!decade) |> 
+    mutate(
+      author = if_else(author == 'Robert James Waller', 'Robert Waller', author),
+      rank = 1:5,
+      sparkline_weeks = paste0(
+        here::here('img/'),
+        decade,
+        '_',
+        rank,
+        '.png'
+      ),
+      decade = paste0(decade, 's'),
+      test = pmap(.l = list(weeks, author, best_book, color), format_text)
+  ) |> 
+  select(
+    rank, decade, test, sparkline_weeks, img
+  ) |> 
+  gt(groupname_col = 'decade') |> 
+  gt_img_circle(column = 'img', height = img_size) |> 
+  gt_img_rows(columns = 'sparkline_weeks', img_source = 'local', height = 75) |> 
+  cols_width(
+    img ~ px(82), # For some reason it needs to be a little more than 75px
+    test ~ px(300),
+    sparkline_weeks ~ px(100)
+  ) |> 
+  cols_align('left', columns = 'test') |> 
+  fmt_markdown(columns = c('test')) |> 
+  tab_options(
+    column_labels.hidden = TRUE,
+    table.background.color = 'black',
+    table.font.color = 'white',
+    table.font.names = 'Open Sans',
+    data_row.padding = px(0)
+  ) |> 
+  tab_style(
+    style = cell_text(size = '15pt', weight = 'bold', v_align = 'top'),
+    locations = cells_body('rank')
+  ) |> 
+  opt_css(
+    '.gt_group_heading_row {
+      text-align:center;
+    }
+    '
+  )
+}
+```
+
+
+```{r}
+#| column: screen
+# Can't use inline css because it for some reason destroys the first column of each
+# table otherwise
+raw_tables <- map(seq(1960, 2010, 10), create_decade_table) |> 
+  map_chr(as_raw_html, inline_css = FALSE)
+
+## Tanya, in case you're reading this: Thank you for coding the title.
+## I mean, thank you for the whole cool table. 
+## But especially thank you for coding the title.
+## I didn't want to piggyback your code as much as possible but after working for hours
+## to get the {gt} mechanics right, I just couldn't handly having to `<span>` the texts.
+## Your code was a true life saver here.
+title <- paste0(
+  "<span style='font-family:Chomsky;font-size:42pt;color:white;'> The New York Times</span>",
+  "<span style='font-family:opensans;font-size:24pt;color:white;'> **Best Selling Authors**</span>",
+  "<br><span style='font-family:opensans;font-size:18pt;color:#D6D6D6'>Top authors by decade. Ranking based on number of weeks author appeared on list. Sparkline depicts total weeks<br>by year (counts multiple books). Top performing book included beneath each author's name. Data from Post45 Data Collective.</span><br>"
+)
+
+tbl <- tibble(
+  col1 = raw_tables[c(1, 4)],
+  col2 = raw_tables[c(2, 5)],
+  col3 = raw_tables[c(3, 6)]
+) |> 
+  gt(id = 'my_tbl') |> 
+  fmt_markdown(columns = everything()) |> 
+  tab_options(
+    table.background.color = 'black',
+    table.font.color = 'white',
+    table.font.names = 'Open Sans',
+    column_labels.hidden = TRUE,
+    row_group.border.top.style = 'none',
+    row_group.border.bottom.style = 'none',
+    table.border.bottom.style = 'solid',
+    table.border.bottom.width = px(1),
+    table.border.top.style = 'none',
+    table_body.border.bottom.style = 'none',
+    table_body.border.top.style = 'none',
+    heading.border.bottom.style = 'none',
+    column_labels.border.top.style = 'none',
+  ) |> 
+  opt_css(
+    '.gt_group_heading_row {
+      text-align:center;
+      font-size:16pt;
+    }
+    
+    #my_tbl .gt_footnote {
+      text-align: right; 
+      padding-top: 20px;
+      padding-bottom:5px;
+      font-family:"Open Sans";
+      font-size:10pt;
+      font-weight:bold;
+    }
+    
+    #my_tbl .gt_row {
+      border-top-color: grey;
+      border-bottom-color: grey;
+    }
+    
+    .gt_table_body {line-height:1.2;}
+    
+    '
+  ) |> 
+  tab_header(
+    title = md(title)
+  ) |> 
+  tab_style(
+    locations = cells_body(rows = 1),
+    style = cell_borders(style = 'hidden')
+  ) |> 
+  tab_footnote(
+    html(glue::glue(
+      '{ggplot2} Original: <<fontawesome::fa("twitter")>>@tanya_shapiro | 
+      {gt} recreation: <<fontawesome::fa("twitter")>>@rappa753',
+      .open = "<<", .close = ">>"
+    ))
+  ) |> 
+  cols_width(
+    col1 ~ px(600),
+    col2 ~ px(600),
+    col3 ~ px(600)
+  )
+
+
+tbl 
+```
+
+
+
+
+

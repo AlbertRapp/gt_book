@@ -1,0 +1,17 @@
+# Styling {#sec-styling}
+
+## Annotations {#sec-annotation}
+
+- title
+- caption
+- footnote
+
+## Theming {#sec-theming}
+
+opt_stylize
+
+### Tab options
+
+### Cell styling
+
+### Custom CSS

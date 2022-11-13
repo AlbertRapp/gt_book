@@ -1,0 +1,759 @@
+# Fancy stuff / Eye catchers {#sec-fancy-stuff}
+
+```{r}
+#| echo: false
+library(knitr)
+knit_print.gt <- function(x, ...) {
+  # Two steps to avoid most Quarto changes of my table styles: 
+  # 1. as_raw_html() to use table styles *inline*
+  # 2. wrap output in a div that resets all Quarto styles
+  stringr::str_c(
+    "<div style='all:initial';>\n", 
+    gt::as_raw_html(x), 
+    "\n</div>"
+  ) |> 
+    knitr::asis_output()
+}
+registerS3method(
+  "knit_print", 'gt_tbl', knit_print.gt, 
+  envir = asNamespace("gt") 
+  # important to overwrite {gt}s knit_print
+)
+```
+
+In this chapter, we're going to learn how to add fancy elements like plots, icon and images to `{gt}` tables.
+We're going to start this chapter by using a selection of the `gapminder` data set from `{gapminder}`.
+
+```{r}
+#| message: false
+#| warning: false
+library(tidyverse)
+library(gt)
+gapminder_data <- gapminder::gapminder |> 
+  janitor::clean_names() |> 
+  select(continent, country, year, life_exp) |> 
+  mutate(year = as.character(year)) # Year is really categorical with numeric labels
+gapminder_data
+```
+
+Let's bring this into a table using some fancy elements.
+Many such elements can be added relatively easily with [`{gtExtras}`](https://jthomasmock.github.io/gtExtras/index.html).
+For example, here's a summary table of our data set.
+
+```{r}
+library(gtExtras)
+gt_plt_summary(gapminder_data) 
+```
+
+As you can see, this table includes icons in the first column (categorical or continuous variables) and a plot overview in the third column.
+Automatic tables like this can give you a feeling for the data at a glance.
+For example, we can see that there are 12 years and 142 countries present in the data set.
+Also, no values are missing.
+
+Since we have quite a lot of info on many countries and years, let us make our data set a bit smaller.
+We don't want to create huge tables (yet).
+Just like in the last chapter, we will have to reorder our data a bit so that it's already in a good table format.
+
+```{r}
+#| echo: false
+
+set.seed(34534)
+```
+
+```{r}
+selected_countries <- gapminder_data  |> 
+# Filter to use only six years (those that end in 7)
+  filter(str_ends(year, "7")) |>
+# sample two countries per continent
+  group_by(continent, country) |> 
+  nest() |> 
+  group_by(continent) |> 
+  slice_sample(n = 2) |> 
+  ungroup() |> 
+  unnest(data) |> 
+# Rearrange the data into table format
+  pivot_wider(names_from = year, names_prefix = 'year', values_from = life_exp)
+selected_countries
+```
+
+From this we can create a `{gt}` table just like we learned in the last chapter.
+And with `{gtExtras}` we can apply a cool [FiveThirtyEight](https://fivethirtyeight.com/) theme to our table.
+
+```{r}
+# New column names
+new_colnames <- colnames(selected_countries) |> str_remove('(country|year)')
+names(new_colnames) <- colnames(selected_countries)
+
+selected_countries |> 
+  gt(groupname_col = 'continent') |> 
+  tab_header(
+    title = 'Life Expectancies over time',
+    subtitle = 'Data is courtesy of the Gapminder foundation'
+  ) |> 
+  cols_label(.list = new_colnames) |> 
+  fmt_number(columns = where(is.numeric), decimals = 2) |> 
+  gt_theme_538()
+```
+
+## Transform columns into heatmaps
+
+In this table, we can see that Sierra Leone had by far the lowest life expectancy in 2007 (among the depicted countries).
+We can figure this out by comparing the numbers in the most recent column one-by-one.
+
+But that takes quite a lot of effort.
+Instead, let us make that easier to see by transforming that column into a heat map.
+To do so, just pass our table to `gt_color_rows()`.
+What you'll need to specify, is
+
+-   the targeted columns
+-   the range of the values that are supposed to be colored
+-   two colors that are used as linear gradient
+
+```{r}
+# Two colors from the Okabe Ito color palette
+color_palette <- c("#CC79A7", "#009E73")
+
+selected_countries |> 
+  gt(groupname_col = 'continent') |> 
+  tab_header(
+    title = 'Life Expectancies over time',
+    subtitle = 'Data is courtesy of the Gapminder foundation'
+  ) |> 
+  cols_label(.list = new_colnames) |> 
+  fmt_number(columns = where(is.numeric), decimals = 2) |> 
+  gt_theme_538() |> 
+  gt_color_rows(
+    columns = year2007, 
+    domain = c(30, 85),
+    palette = color_palette
+  )
+```
+
+We could also do this for more columns.
+For example, we could also do the same with the 1957 column.
+
+```{r}
+# Two colors from the Okabe Ito color palette
+color_palette <- c("#CC79A7", "#009E73")
+
+selected_countries |> 
+  gt(groupname_col = 'continent') |> 
+  tab_header(
+    title = 'Life Expectancies over time',
+    subtitle = 'Data is courtesy of the Gapminder foundation'
+  ) |> 
+  cols_label(.list = new_colnames) |> 
+  fmt_number(columns = where(is.numeric), decimals = 2) |> 
+  gt_theme_538() |> 
+  gt_color_rows(
+    columns = c(year1957, year2007), 
+    domain = c(30, 85),
+    palette = color_palette
+  )
+```
+
+You could even do that with all columns.
+But I am not sure whether that's a good idea here.
+After all, we may not want to overload our table with colors.
+
+## Add sparklines
+
+It is quite hard to figure out that each depicted country increased its life expectancy in each year.
+Sure, you may have an idea that this is the case.
+But to be sure for real, you will have to compare each cell of each row.
+
+Why don't we make that a little bit easier?
+Let us add small line charts.
+This kind of chart is known as a sparkline.
+It's main advantage is that it can make patterns really obvious.
+Have a look for yourself.
+
+```{r}
+#| echo: false
+
+life_exps_timeline <- gapminder_data |> 
+  filter(
+    str_ends(year, "7"),
+    country %in% selected_countries$country
+  ) |> 
+  group_by(country) |> 
+  summarise(Timeline = list(c(life_exp)))
+```
+
+```{r sparkline-plot}
+#| echo: false
+## Join First
+selected_countries |> 
+  left_join(life_exps_timeline, by = 'country') |> 
+## Do table as before
+  gt(groupname_col = 'continent') |> 
+  tab_header(
+    title = 'Life Expectancies over time',
+    subtitle = 'Data is courtesy of the Gapminder foundation'
+  ) |> 
+  cols_label(.list = new_colnames) |> 
+  fmt_number(columns = where(is.numeric), decimals = 2) |> 
+  gt_theme_538() |> 
+  gt_color_rows(
+    columns = c(year1957, year2007), 
+    domain = c(30, 85),
+    palette = color_palette
+  ) |> 
+## Target Timeline column
+  gt_plt_sparkline(
+    column = Timeline,
+    palette = c("grey40", "grey40", "grey40", "dodgerblue1", "grey40"),
+    fig_dim = c(5, 28)
+  )
+```
+
+To create such a table we first need a `tibble` that has a column `Timeline` that contains the values from 1957 to 2007.
+*A column that contains more than one value per cell, you say?* Yes, you heard that correctly.
+What we need is a tibble with list-like columns.
+Sounds fancy if you've never heard it before but it is not actually that hard to create one.
+Here's what we're going to do.
+
+1.  Take the original data set `gapminder_data` and filter it such that it contains the same years and countries as our data set `selected_countries`
+2.  Group the filtered data set by `country` and run `summarise(Timeline = list(c(life_exp)))`.
+
+The trick here is to wrap the combine function `c()` into `list()`.
+This way, the new list will become one object that will be saved into a `tibble`'s cell.
+
+::: panel-tabset
+## Filter
+
+```{r}
+gapminder_data |> 
+  filter(
+    str_ends(year, "7"),
+    country %in% selected_countries$country
+  )
+```
+
+## Summary
+
+```{r}
+life_exps_timeline <- gapminder_data |> 
+  filter(
+    str_ends(year, "7"),
+    country %in% selected_countries$country
+  ) |> 
+  group_by(country) |> 
+  summarise(Timeline = list(c(life_exp)))
+life_exps_timeline
+```
+:::
+
+Now we can run a quick `left_join()` to, well, join our two data sets.
+Then it's `gt()`-time.
+This will list all values of the `Timeline` column in the `{gt}` table.
+Have a look.
+
+```{r}
+#| collapse: true
+
+selected_countries |> 
+  left_join(life_exps_timeline, by = 'country') |> 
+  gt(groupname_col = 'continent') |> 
+  tab_header(
+    title = 'Life Expectancies over time',
+    subtitle = 'Data is courtesy of the Gapminder foundation'
+  ) |> 
+  cols_label(.list = new_colnames) |> 
+  fmt_number(columns = where(is.numeric), decimals = 2) |> 
+  gt_theme_538() |> 
+  gt_color_rows(
+    columns = c(year1957, year2007), 
+    domain = c(30, 85),
+    palette = color_palette
+  )
+```
+
+Finally, the last ingredient is to target the `Timeline` column with the `gt_plt_sparkline()` layer.
+In that layer, we can adjust the colors and the dimensions of our sparkline too.
+
+```{r sparkline-plot}
+#| echo: true
+```
+
+Alright, we've created the our first table that contains a plot.
+The pattern to add fancy plots/images/fancy stuff is always the same, so let's recap.
+
+-   Step 1: Get the necessary data for the image into the `tibble` before even calling `gt()`. This will give you additional columns.
+-   Step 2: Target the additional columns with a new layer.
+
+## Add bullet charts
+
+As we know, the `gapminder` data set is much is larger than what we show here.
+In fact, we have the same data for many more countries.
+But showing all of that information would make the table HUUUGE.
+
+We could still use that information, though.
+Here, we could put the life expectancy of our selected countries into context.
+For example, for each country let us compare its life expectancy to the mean life expectancy of its continent .
+A so-called bullet chart will do the trick.
+Check it out.
+
+```{r}
+#| echo: false
+mean_life_exps <- gapminder_data |> 
+  filter(year == "2007") |> 
+  group_by(continent) |> 
+  summarise(mean_life_exp = mean(life_exp))
+
+selected_countries_joined_info <- selected_countries |> 
+  left_join(mean_life_exps, by = 'continent') |> 
+  mutate(rep2007 = year2007)
+```
+
+```{r bullet-chart}
+#| echo: false
+
+# I like to use str_c() to connect strings to make the text less messy
+html_text <- str_c(
+  'Comparison 2007',
+  '<br>',
+  '<span style="color:#1e90ff;display:inline;">',
+  'continent mean', 
+  '</span> | ',
+  '<span style="color:#104e8b;display:inline;">',
+  'country',
+  '</span>'
+)
+
+selected_countries_joined_info |> 
+## Do table as before
+  gt(groupname_col = 'continent') |> 
+  tab_header(
+    title = 'Life Expectancies over time',
+    subtitle = 'Data is courtesy of the Gapminder foundation'
+  ) |> 
+  cols_label(.list = new_colnames) |> 
+  fmt_number(columns = where(is.numeric), decimals = 2) |> 
+  gt_theme_538() |> 
+  gt_color_rows(
+    columns = c(year1957, year2007), 
+    domain = c(30, 85),
+    palette = color_palette
+  ) |> 
+## Target mean_life_exp column and change it's column name
+  gt_plt_bullet(
+    column = rep2007,
+    target = mean_life_exp,
+    palette = c("dodgerblue4", "dodgerblue1"),
+    width = 45
+  ) |> 
+  cols_label(rep2007 = html(html_text))
+
+```
+
+In this table you can see that Sierra Leone's life expectancy in 2007 is way below Africa's mean life expectancy.
+In contrast, Egypt's life expectancy is much higher than Africa's mean life expectancy.
+
+So, how do we create this table?
+Well, do you remember the first step of getting fancy plots into your table?
+That's right.
+Expand your tibble with the necessary data for your plot.
+
+In this case, that's two things: The life expectancy of a country in 2007 and the continent's mean life expectancy.
+So, we're going to add two new columns.
+One of the columns will just be a duplicate of an already existent column though.
+
+```{r}
+mean_life_exps <- gapminder_data |> 
+  filter(year == "2007") |> 
+  group_by(continent) |> 
+  summarise(mean_life_exp = mean(life_exp))
+
+selected_countries_joined_info <- selected_countries |> 
+  left_join(mean_life_exps, by = 'continent') |> 
+  mutate(rep2007 = year2007)
+selected_countries_joined_info
+```
+
+Next step is using the two new columns in a layer that creates the bullet chart.
+That's `gt_plt_bullet()`.
+Two of its arguments are designed for the two new columns.
+
+```{r}
+selected_countries_joined_info |> 
+## Do table as before
+  gt(groupname_col = 'continent') |> 
+  tab_header(
+    title = 'Life Expectancies over time',
+    subtitle = 'Data is courtesy of the Gapminder foundation'
+  ) |> 
+  cols_label(.list = new_colnames) |> 
+  fmt_number(columns = where(is.numeric), decimals = 2) |> 
+  gt_theme_538() |> 
+  gt_color_rows(
+    columns = c(year1957, year2007), 
+    domain = c(30, 85),
+    palette = color_palette
+  ) |> 
+## Use mean_life_exp and rep2007
+  gt_plt_bullet(
+    column = rep2007,
+    target = mean_life_exp,
+    palette = c("dodgerblue4", "dodgerblue1"),
+    width = 45 # width in px
+  )
+```
+
+Finally, we need to relabel the `rep2007` column with `cols_label()`.
+And to make the new label use colors, we will have to write a label with HTML.
+Here's what you need to know for that:
+
+-   `<br>` is a line break in HTML
+-   `<span style="color:red;font-size:24pt;">some text</span>` would result in [ some text ]{style="color:red;font-size:24pt;"}.
+
+So, just create a `character` variable in R that uses this Syntax and let `gt()` know that you mean ~~business~~ HTML.
+The latter can be done with `html()`.
+
+```{r bullet-chart}
+#| echo: true
+```
+
+## Include icons in your tables
+
+Adding icons to any `{gt}` table is easy.
+You don't actually need anything but the icon itself.
+Thankfully, R has just the right `{emoji}` package to get the work done.
+Once you've got the data, just send that to `gt()` and you're done.
+
+```{r}
+vegetables <- tibble(
+  Vegetable = c('eggplant', 'cucumber', 'broccoli', 'garlic', 'onion')
+) |> 
+  mutate(
+# Apply emoji() function to every text from Vegetable column
+    Emoji = map_chr(Vegetable, emoji::emoji),
+    Vegetable = str_to_title(Vegetable)
+  ) 
+vegetables
+
+vegetables |> 
+  gt() |> 
+  tab_header(
+    title = 'VegeTABLE',
+    subtitle = 'Emojis are taken from the {emoji} package'
+  ) |> 
+# This part makes emojis larger
+  tab_style(
+    style = list(cell_text(size = px(25))),
+    locations = cells_body(columns = 'Emoji')
+  )
+```
+
+Notice that I have increased the size of the emojis here.
+Think of this as a teaser for what we're going to do in [@sec-theming].
+
+The same works with [fontawesome icons](https://fontawesome.com/) as well.
+But you have to be a little bit more careful in that case.
+The `{fontawesome}` package will give you an icon as HTML code.
+Thus, you need to wrap the output from `fontawesome::fa()` in `html()`.
+
+```{r}
+#| collapse: true
+brands <- tibble(
+  Brand = c('twitter', 'facebook', 'linkedin', 'github'),
+  color = c('#1DA1F2', '#4267B2', '#0077B5', '#333' )
+) |>
+  mutate(
+# Apply fa() function with all values from columns Brand and color
+    Emoji = map2(Brand, color, ~fontawesome::fa(.x, fill = .y)),
+# Apply html() function to previous results
+    Emoji = map(Emoji, html),
+    Brand = str_to_title(Brand)
+  ) |>
+  select(-color)
+brands
+
+brands |>
+  gt(id = 'my_tbl') |>
+  tab_header(
+    title = 'Brand table',
+    subtitle = 'Icons are taken from the {fontawesome} package'
+  )  |>
+# This part makes emojis larger
+  tab_style(
+    style = list(cell_text(size = px(25))),
+    locations = cells_body(columns = 'Emoji')
+  ) 
+```
+
+## Include images in your tables
+
+The easiest way to add images to your table is to rely on `gt_img_rows()` from `{gtExtras}`.
+Just add a column with file paths/URLs of images to your tibble.
+Then, target that column with `gt_img_rows()` and your work is done.
+
+For example, you could use this to get images of the last four British prime ministers from Wikipedia and use them in a table.[^fancy_stuff-1]
+
+[^fancy_stuff-1]: This is the current list (November 12, 2022).
+    The British change PMs quite often recently.
+
+```{r}
+pm_data <- tribble(
+  ~Name, ~Image,
+  'Rishi Sunak', 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Rishi_Sunak%27s_first_speech_as_Prime_Minister_Front_%28cropped%29.jpg/1024px-Rishi_Sunak%27s_first_speech_as_Prime_Minister_Front_%28cropped%29.jpg',
+  'Liz Truss', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Liz_Truss_official_portrait_%28cropped%292.jpg/292px-Liz_Truss_official_portrait_%28cropped%292.jpg',
+  'Boris Johnson', 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Boris_Johnson_official_portrait_%28cropped%29.jpg/288px-Boris_Johnson_official_portrait_%28cropped%29.jpg',
+  'Theresa May', 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Theresa_May_cropped.png/291px-Theresa_May_cropped.png'
+)
+
+pm_data |>
+  gt() |>
+  gt_img_rows(columns = 'Image', height = 100)
+```
+
+Alternatively, you can use `gt_img_circle()`.
+This will give you round images.
+But you have to be careful that your column width matches the height of your image.
+You can achieve that with `cols_width()`.
+This function's syntax is really simple.
+Basically, it's `cols_width(column ~ px(<number of pixels>))`.
+
+```{r}
+pm_data_round <- tribble(
+  ~Name, ~Image,
+  'Rishi Sunak', 'https://pbs.twimg.com/profile_images/1572638567381307394/AEahAxu5_400x400.jpg',
+  'Liz Truss', 'https://pbs.twimg.com/profile_images/1514636699946602499/hUoOgAOz_400x400.jpg',
+  'Boris Johnson', 'https://pbs.twimg.com/profile_images/1500170386520129536/Rr2G6A-N_400x400.jpg',
+  'Theresa May', 'https://pbs.twimg.com/profile_images/936639677121081344/_e5l_DEG_400x400.jpg'
+)
+
+pm_data_round |>
+  gt() |>
+  gt_img_circle(column = 'Image', height = 100, border_weight = 1) |>
+  cols_width(Image ~ px(110)) # 110 = 100 (height) + 10 (padding around imgs)
+```
+
+## Add arbitrary plots to your table
+
+So far we've learned to add spark lines, bullet charts, icons and images to our tables.
+There are some other cool visual elements that can be added with help from `{gtExtras}`.
+You should definitely check out [its documentation](https://jthomasmock.github.io/gtExtras/reference/index.html) to see the full list.
+
+For my final trick of this chapter, I'm going to show you how you can add any ggplot to your table.
+For example, we could look at our penguins from last chapter again.
+Here's a table about their weight and its distribution (visualized with a violin plot.)
+
+```{r penguin-violin}
+#| echo: false
+
+filtered_penguins <- palmerpenguins::penguins |>
+    filter(!is.na(sex))
+
+penguin_weights <- filtered_penguins |>
+  group_by(species) |>
+  summarise(
+    Min = min(body_mass_g),
+    Mean = mean(body_mass_g) |> round(digits = 2),
+    Max = max(body_mass_g)
+  ) |>
+  mutate(species = as.character(species), Distribution = species) |>
+  rename(Species = species)
+
+
+plot_density_species <- function(species, variable) {
+  full_range <- filtered_penguins |>
+    pull({{variable}}) |>
+    range()
+
+  filtered_penguins |>
+    filter(species == !!species) |>
+    ggplot(aes(x = {{variable}}, y = species)) +
+    geom_violin(fill = 'dodgerblue4') +
+    theme_minimal() +
+    scale_y_discrete(breaks = NULL) +
+    scale_x_continuous(breaks = NULL) +
+    labs(x = element_blank(), y = element_blank()) +
+    coord_cartesian(xlim = full_range)
+}
+
+penguin_weights |>
+  gt() |>
+  tab_spanner(
+    label = 'Penguin\'s Weight',
+    columns = -Species
+  ) |>
+  text_transform(
+    locations = cells_body(columns = 'Distribution'),
+    # Create a function that takes the a column as input
+    # and gives a list of ggplots as output
+    fn = function(column) {
+      map(column, ~plot_density_species(., body_mass_g)) |>
+        ggplot_image(height = px(50), aspect_ratio = 3)
+    }
+  ) 
+```
+
+To create this table, let us begin with the basics.
+Let's compute the numeric values first.
+
+```{r}
+filtered_penguins <- palmerpenguins::penguins |>
+    filter(!is.na(sex))
+
+penguin_weights <- filtered_penguins |>
+  group_by(species) |>
+  summarise(
+    Min = min(body_mass_g),
+    Mean = mean(body_mass_g) |> round(digits = 2),
+    Max = max(body_mass_g)
+  ) |>
+  mutate(species = as.character(species)) |>
+  rename(Species = species)
+
+penguin_weights |>
+  gt() |>
+  tab_spanner(
+    label = 'Penguin\'s Weight',
+    columns = -Species
+  ) 
+```
+
+Next, let us write a function `plot_violin_species(my_species)` that depends on a penguin species and creates **one** violin plot.
+
+```{r}
+plot_density_species <- function(my_species) {
+  full_range <- filtered_penguins |>
+    pull(body_mass_g) |>
+    range()
+
+  filtered_penguins |>
+    filter(species == my_species) |>
+    ggplot(aes(x = body_mass_g, y = species)) +
+    geom_violin(fill = 'dodgerblue4') +
+    theme_minimal() +
+    scale_y_discrete(breaks = NULL) +
+    scale_x_continuous(breaks = NULL) +
+    labs(x = element_blank(), y = element_blank()) +
+    coord_cartesian(xlim = full_range)
+}
+plot_density_species('Adelie')
+```
+
+Notice that I have set the coordinate system of the plot to the full range of the data (regardless of the species).
+This part is important.
+Without this trick, the three plots would not share a common x-axis.
+Then, our table might look something like this:
+
+```{r}
+#| echo: false
+#| tbl-cap: "WATCH OUT: The violin plots are not using a shared axis here and are misleading"
+
+filtered_penguins <- palmerpenguins::penguins |>
+    filter(!is.na(sex))
+
+penguin_weights <- filtered_penguins |>
+  group_by(species) |>
+  summarise(
+    Min = min(body_mass_g),
+    Mean = mean(body_mass_g) |> round(digits = 2),
+    Max = max(body_mass_g)
+  ) |>
+  mutate(species = as.character(species), Distribution = species) |>
+  rename(Species = species)
+
+
+plot_density_species_false <- function(species, variable) {
+  filtered_penguins |>
+    filter(species == !!species) |>
+    ggplot(aes(x = {{variable}}, y = species)) +
+    geom_violin(fill = 'dodgerblue4') +
+    theme_minimal() +
+    scale_y_discrete(breaks = NULL) +
+    scale_x_continuous(breaks = NULL) +
+    labs(x = element_blank(), y = element_blank()) 
+}
+
+penguin_weights |>
+  gt() |>
+  tab_spanner(
+    label = 'Penguin\'s Weight',
+    columns = -Species
+  ) |>
+  text_transform(
+    locations = cells_body(columns = 'Distribution'),
+    # Create a function that takes the a column as input
+    # and gives a list of ggplots as output
+    fn = function(column) {
+      map(column, ~plot_density_species_false(., body_mass_g)) |>
+        ggplot_image(height = px(50), aspect_ratio = 3)
+    }
+  ) 
+```
+
+Ok, so now we have a function that creates the desired plots.
+Time to apply it to our table.
+For this to work, we need an additional column that we can target (just like before).
+
+```{r}
+penguin_weights |>
+  mutate(Distribution = Species) |> 
+  gt() |>
+  tab_spanner(
+    label = 'Penguin\'s Weight',
+    columns = -Species
+  ) 
+```
+
+Next, use the `text_transform()` layer to turn the species names into ggplot images.
+This layer can actually target not just the data rows but everything including column labels or the table header.
+
+So, we have to make sure that we attempt to turn only the data table cells into an image and not, say, the tab spanner.
+This is done with the helper function `cells_body()` (more on this function in [@sec-theming]).
+Here's how that will look.
+
+```{r}
+#| eval: false
+penguin_weights |>
+  mutate(Distribution = Species) |> 
+  gt() |>
+  tab_spanner(
+    label = 'Penguin\'s Weight',
+    columns = -Species
+  ) |>
+  text_transform(
+    locations = cells_body(columns = 'Distribution'),
+    fn = #Put function here
+  ) 
+```
+
+Finally, we need to set the `fn` argument to a function that takes a column and returns **actual images**.
+This is not our `plot_density_species()` function.
+This one takes only one species name and returns **one ggplot object**.
+
+But we can wrap it in `map()` such that a column is turned into a list of ggplot objects.
+The conversion to images is performed by `ggplot_image()`.
+We can use it to also specify the height and width (indirectly via aspect ratio) of the image.
+
+```{r}
+penguin_weights |>
+  mutate(Distribution = Species) |> 
+  gt() |>
+  tab_spanner(
+    label = 'Penguin\'s Weight',
+    columns = -Species
+  ) |>
+  text_transform(
+    locations = cells_body(columns = 'Distribution'),
+    fn = function(column) {
+      map(column, plot_density_species) |>
+        ggplot_image(height = px(50), aspect_ratio = 3)
+    }
+  ) 
+```
+
+## Summary
+
+Sweet!
+We've learned a lot of fancy table elements.
+Some of them were quite easy to implement.
+Some of them not so much.
+
+In the next chapter, we're going to take a breather.
+We're going to learn about the two families of `sub_*` and `fmt_*`.
+They're super easy to learn and crucial for formatting the data in your table.

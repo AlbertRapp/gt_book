@@ -1,0 +1,700 @@
+# Formatting {#sec-formatting}
+
+```{r}
+#| echo: false
+library(knitr)
+knit_print.gt <- function(x, ...) {
+  # Two steps to avoid most Quarto changes of my table styles: 
+  # 1. as_raw_html() to use table styles *inline*
+  # 2. wrap output in a div that resets all Quarto styles
+  stringr::str_c(
+    "<div style='all:initial';>\n", 
+    gt::as_raw_html(x), 
+    "\n</div>"
+  ) |> 
+    knitr::asis_output()
+}
+registerS3method(
+  "knit_print", 'gt_tbl', knit_print.gt, 
+  envir = asNamespace("gt") 
+  # important to overwrite {gt}s knit_print
+)
+```
+
+`{gt}` has two families of functions that handle a lot of the data formatting parts.
+And you have already seen representatives of these families, namely `fmt_number()` and `sub_zero()`.
+In this chapter we're going to discover some of their siblings.
+
+The functions in these families are structured the same.
+So, if you can work with one, then you can work with them all.
+That's why we're not going to cover them all with examples here.
+For a full list of these functions take a look at the [`gt` docs](https://gt.rstudio.com/reference/index.html). 
+
+## fmt\_\* functions {#sec-fmt-functions}
+
+First, we need some example data to practice on.
+Thankfully, `{gt}` already comes with data sets that use many different data formats.
+Let me introduce you to `{gt}`'s example tibble, or short `exibble`.
+
+```{r}
+#| message: false
+#| warning: false
+library(tidyverse)
+library(gt)
+exibble
+```
+
+Let's put this into a `{gt}` table.
+We're going to use one of the pre-defined themes.
+
+```{r}
+exibble |> 
+  gt() |> 
+  opt_stylize(style = 3)
+```
+
+Phew!
+This is table won't win any awards any time soon.
+Let's clean it up a bit by working us through the columns one by one.
+
+### Numbers
+
+Let's first get rid of the [scientific notation](https://en.wikipedia.org/wiki/Scientific_notation) in the `num` column.
+While we're at it, we're going to round to one decimal.
+
+```{r}
+exibble |> 
+  select(num) |>
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(
+    columns = 'num',
+    decimals = 1
+  )
+```
+
+
+Next, we may want to adjust our marks `,` and `.` in the output.
+For example, in German we write one million as `1.000.000` and a quarter as `0,25`.
+Hence, we could change the `sep_mark` and `dec_mark` argument in `fmt_number()`.
+But the easier way is to just change the `locale` to `"de"` (German).
+
+```{r}
+exibble |> 
+  select(num) |>
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(
+    columns = 'num',
+    decimals = 1,
+    locale = 'de'
+  )
+```
+
+Since we also have some very large numbers in the `num` column, we could apply some suffixing.
+This means that we transform e.g. 1000 to 1k.
+
+```{r}
+exibble |> 
+  select(num) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(
+    columns = 'num',
+    decimals = 1,
+    suffixing = TRUE
+  )
+```
+
+We could also use our own suffixes.
+
+```{r}
+# Thousand - Million - Billion - Trillion
+custom_suffixes <- c("k", "mil", "bil", "tril")
+
+exibble |> 
+  select(num) |>
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(
+    columns = 'num',
+    decimals = 1,
+    suffixing = custom_suffixes
+  )
+```
+
+### Currency
+
+Now, let's format the `currency` column.
+The default `currency` is `USD` so that will give you \$.
+
+```{r}
+exibble |> 
+  select(num, currency) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_currency(columns = 'currency')
+```
+
+
+Since I mostly use Euros in my real life, let me change the `currency` argument here.
+And we're going to set the locale to German again.
+
+```{r}
+exibble |> 
+  select(num, currency) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_currency(
+    columns = 'currency', currency = 'EUR', locale = 'de'
+  )
+```
+
+You'd think that this is the correct way to state a price in Germany.
+But it's not.
+Unfortunately, the locale did not catch that we use the Euro symbol at the end of a number.
+But no worries, we can fix that manually.
+
+Instead of `fmt_currency()`, we're going to use `fmt_number()` and apply the Euro symbol manually via `pattern`.
+The `fmt_*()` functions use `{x}` as placeholder for the functions regular output.
+So that way we could create outputs as we see fit.
+Here are two examples.
+
+::: panel-tabset
+
+#### Euro symbol (trailing)
+
+```{r}
+exibble |> 
+  select(num, currency) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency',
+    decimals = 2,
+    locale = 'de',
+    pattern = '{x}€'
+  )
+```
+
+#### Euro text (leading)
+
+```{r}
+exibble |> 
+  select(num, currency) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency',
+    decimals = 2,
+    locale = 'de',
+    pattern = 'EUR {x}'
+  )
+```
+
+
+:::
+
+
+
+We have rounded the `num` column to one decimal with the first `fmt_number()` layer.
+It's interesting to find out what happens if we had targeted the `currency` column in that layer too.
+Would the next `fmt_layer()` round the previously rounded number or the original number?
+Let's check.
+
+::: panel-tabset
+
+#### Round both columns in first layer
+
+```{r}
+#| code-fold: true
+exibble |> 
+  select(num, currency) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = c('num', 'currency'), decimals = 1) |>
+  fmt_number(
+    columns = 'currency',
+    decimals = 2,
+    locale = 'de',
+    pattern = '{x}€'
+  )
+```
+
+#### Round only `num` in first layer
+
+```{r}
+#| code-fold: true
+exibble |> 
+  select(num, currency) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency',
+    decimals = 2,
+    locale = 'de',
+    pattern = '{x}€'
+  )
+```
+
+
+:::
+
+As you can see, the output is the same.
+This means that the `fmt_*()` functions always use the original data.
+That's good to know.
+
+Fun fact: 
+That's also what's happening when you rename a column with `cols_label()`.
+Internally, the column names always rename the same.
+
+
+### Dates, times and datetimes
+
+We can format any date using `fmt_date()`.
+And there are quite a few `date_style`s we can choose from.
+Here, are a few examples.
+
+::: panel-tabset
+
+#### wday_month_day_year
+
+```{r}
+exibble |> 
+  select(num, currency, date) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+  ) |> 
+  fmt_date(columns = 'date', date_style = "wday_month_day_year")
+```
+
+#### day_m_year
+
+```{r}
+exibble |> 
+  select(num, currency, date) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+  ) |> 
+  fmt_date(columns = 'date', date_style = "day_m_year")
+```
+
+
+#### yMMMd
+
+```{r}
+exibble |> 
+  select(num, currency, date) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+  ) |> 
+  fmt_date(columns = 'date', date_style = "yMMMd")
+```
+
+
+#### yMMMEd
+
+```{r}
+exibble |> 
+  select(num, currency, date) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+  ) |> 
+  fmt_date(columns = 'date', date_style = "yMMMEd")
+```
+
+:::
+
+To see the full list, you can run `info_date_style()`.
+
+```{r}
+info_date_style()
+```
+
+Notice that some of these styles are labeled as flexible.
+This means that they will adjust to locales.
+Beware that month names may adapt to the locale but not the formatting.
+Notice how `day_m_year` does not set a `.` after the day but `yMMMd` does.
+The latter is the correct German formatting.
+
+::: panel-tabset
+
+#### day_m_year
+
+```{r}
+#| code-fold: true
+exibble |> 
+  select(num, currency, date) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+  ) |> 
+  fmt_date(
+    columns = 'date', 
+    locale = 'de',
+    date_style = "day_m_year"
+  )
+```
+
+#### yMMMd
+
+```{r}
+#| code-fold: true
+exibble |> 
+  select(num, currency, date) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+  ) |> 
+  fmt_date(
+    columns = 'date', 
+    locale = 'de',
+    date_style = "yMMMd"
+  )
+```
+
+:::
+
+Formatting time works basically the same, so I'm just going to show one example.^[
+You should probably know that there seems to be an issue with some of the time formats. 
+At least I've run into some troubles (see [Issue](https://github.com/rstudio/gt/issues/1124)).
+But if your desired format does not work, you can always format it manually. 
+Either before sending the data to `gt()` or with `fmt()` which we'll cover in a sec.
+]
+
+```{r}
+exibble |> 
+  select(num, currency, date, time) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+  ) |> 
+  fmt_date(columns = 'date', locale = 'de', date_style = "yMMMd") |> 
+  fmt_time(columns = 'time', time_style = "Hms")
+```
+
+
+I have a date. 
+I have a time.
+Uh!
+Datetime, cf. [PPAP](https://www.youtube.com/watch?v=Ct6BUPvE2sM)^[
+My brain randomly reminded me of some dumb internet stuff from 6 years ago.
+So naturally I had to incorporate it into my text somehow.
+And of course the YouTube algorithm had to remind me of more [nonsense](https://www.youtube.com/watch?v=jofNR_WkoCE).
+].
+
+Working with these magical columns is exactly what you'd expect.
+You use `fmt_datetime()` which has a `date_style` and a `time_style` argument.
+
+```{r}
+exibble |> 
+  select(num, currency, date, time, datetime) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+  ) |> 
+  fmt_date(columns = 'date', locale = 'de', date_style = "yMMMd") |> 
+  fmt_time(columns = 'time', time_style = "Hms") |> 
+  fmt_datetime(columns = 'datetime', date_style = "yMMMd", time_style = "Hms")
+```
+
+### Markdown
+
+We can also use Markdown and therefore also HTML + CSS in our tables.
+Let's use that to make our table a bit colorful.
+For example, we could wrap elements from the `currency` column into `<span>`-tags to colorize them.
+
+```{r}
+exibble |> 
+  select(num, currency, date, time, datetime) |> 
+  mutate(
+    currency = str_c(
+      '<span style="color:red;font-size:20pt">',
+      currency,
+      '€</span>'
+    )
+  ) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_date(columns = 'date', locale = 'de', date_style = "yMMMd") |> 
+  fmt_time(columns = 'time', time_style = "Hms") |> 
+  fmt_datetime(columns = 'datetime', date_style = "yMMMd", time_style = "Hms") |> 
+  fmt_markdown(columns = 'currency')
+```
+
+This is one way you could style your table.
+But I've used this way only for simple demo purposes.
+We'll learn more about styling in [@sec-styling].
+
+The real power of the `fmt_markdown()` function is that you can put any html into the table and it will be formatted correctly afterwards.
+For example, I've copied the [svg](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics)-code (which can be used in HTML) for the R logo from [Wikipedia](https://commons.wikimedia.org/wiki/File:R_logo.svg).
+
+```{r}
+## factor to apply to original width and height of svg from Wikipedia
+scale_size <- 0.5 
+
+r_logo_svg <- glue::glue('
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid" width="{724 * scale_size}" height="{561 * scale_size}" viewBox="0 0 724 561">
+  <defs>
+    <linearGradient id="gradientFill-1" x1="0" x2="1" y1="0" y2="1" gradientUnits="objectBoundingBox" spreadMethod="pad">
+      <stop offset="0" stop-color="rgb(203,206,208)" stop-opacity="1"/>
+      <stop offset="1" stop-color="rgb(132,131,139)" stop-opacity="1"/>
+    </linearGradient>
+    <linearGradient id="gradientFill-2" x1="0" x2="1" y1="0" y2="1" gradientUnits="objectBoundingBox" spreadMethod="pad">
+      <stop offset="0" stop-color="rgb(39,109,195)" stop-opacity="1"/>
+      <stop offset="1" stop-color="rgb(22,92,170)" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+  <path d="M361.453,485.937 C162.329,485.937 0.906,377.828 0.906,244.469 C0.906,111.109 162.329,3.000 361.453,3.000 C560.578,3.000 722.000,111.109 722.000,244.469 C722.000,377.828 560.578,485.937 361.453,485.937 ZM416.641,97.406 C265.289,97.406 142.594,171.314 142.594,262.484 C142.594,353.654 265.289,427.562 416.641,427.562 C567.992,427.562 679.687,377.033 679.687,262.484 C679.687,147.971 567.992,97.406 416.641,97.406 Z" fill="url(#gradientFill-1)" fill-rule="evenodd"/>
+  <path d="M550.000,377.000 C550.000,377.000 571.822,383.585 584.500,390.000 C588.899,392.226 596.510,396.668 602.000,402.500 C607.378,408.212 610.000,414.000 610.000,414.000 L696.000,559.000 L557.000,559.062 L492.000,437.000 C492.000,437.000 478.690,414.131 470.500,407.500 C463.668,401.969 460.755,400.000 454.000,400.000 C449.298,400.000 420.974,400.000 420.974,400.000 L421.000,558.974 L298.000,559.026 L298.000,152.938 L545.000,152.938 C545.000,152.938 657.500,154.967 657.500,262.000 C657.500,369.033 550.000,377.000 550.000,377.000 ZM496.500,241.024 L422.037,240.976 L422.000,310.026 L496.500,310.002 C496.500,310.002 531.000,309.895 531.000,274.877 C531.000,239.155 496.500,241.024 496.500,241.024 Z" fill="url(#gradientFill-2)" fill-rule="evenodd"/>
+</svg>
+')
+
+tibble(logo = r_logo_svg) |> 
+  gt() |> 
+  fmt_markdown(columns = 'logo')
+```
+
+This `fmt_markdown()` technique is super powerful.
+We could even use it to nest `{gt}`-tables (which are HTML) inside of each other.
+That's what we'll do in [@case-studies] to create elaborate tables.
+
+
+### Any data format
+
+There are some more `fmt_*()` functions for specific formats.
+Once again, you can look at them in the [docs](s://gt.rstudio.com/reference/index.html).
+Instead of showing them all, let me finish of with the most powerful function of them all.
+That's `fmt()`.
+
+You can just apply any function that you like for formatting.
+For example, you could convert text entries to all-caps with `str_to_upper()`.
+
+```{r}
+exibble |> 
+  select(num, currency, date, time, datetime, char) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+  ) |> 
+  fmt_date(columns = 'date', locale = 'de', date_style = "yMMMd") |> 
+  fmt_time(columns = 'time', time_style = "Hms") |> 
+  fmt_datetime(columns = 'datetime', date_style = "yMMMd", time_style = "Hms") |> 
+  fmt(columns = 'char', fn = str_to_upper)
+```
+
+Or you could write your own time-formatting function.
+
+```{r}
+on_time_format <- function(time, target) {
+  if_else(parse_time(time) <= target, 'on time', 'too late')
+}
+
+exibble |> 
+  select(time) |> 
+  mutate(rep_time = time) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt(
+    columns = 'rep_time', 
+    fns = function(x) {
+      on_time_format(x, hms::hms(hours = 16, minutes = 30))
+    }
+  )
+```
+
+
+## sub\_ functions {#sec-sub-functions}
+
+The `sub_*()` functions are straightforward to use.
+There are three main functions that you can use.
+
+- `sub_missing()` replaces `NA` values
+- `sub_zero()` replaces zero values
+- `sub_large_values()` replaces large values (according to some threshold)
+- `sub_small_values()` does... I think you can guess it
+- `sub_values()` can replace large numbers or texts that match a [regex](https://r4ds.hadley.nz/regexps.html)
+
+
+The first two are straight-forward to use.
+By default, they apply to the whole data.
+But you can also target only specific columns and rows by changing the `columns` and `rows` argument.
+
+::: panel-tabset
+
+### Replace `NA`
+
+```{r}
+exibble |> 
+  select(num, currency, date, time, datetime) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num', decimals = 1) |>
+  fmt_number(
+    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+  ) |> 
+  fmt_date(columns = 'date', locale = 'de', date_style = "yMMMd") |> 
+  fmt_time(columns = 'time', time_style = "Hms") |> 
+  fmt_datetime(columns = 'datetime', date_style = "yMMMd", time_style = "Hms") |> 
+  sub_missing(missing_text = '----------')
+```
+
+
+### Replace zeros
+
+```{r}
+tibble(demo_column = -3:3) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  sub_zero(zero_text = 'ZERO, WATCH OUT WHOOP WHOOP')
+```
+
+
+:::
+
+With `sub_small_vals()` and `sub_large_vals()` you have to be a bit careful about the sign of the number you're replacing.
+Both functions will replace only positive or negative numbers.
+So, if you want to replace positive and negative numbers, you have to use the layers multiple times.
+
+::: panel-tabset
+
+### Replace positives
+
+```{r}
+tibble(x = c(-100, 100, 0.01, -0.01), demo_col = x) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = where(is.numeric)) |> 
+  sub_small_vals(columns = 'demo_col', threshold = 1, sign = '+') |> 
+  sub_large_vals(columns = 'demo_col', threshold = 50, sign = '+')
+```
+
+
+### Replace negatives
+
+```{r}
+tibble(x = c(-100, 100, 0.01, -0.01), demo_col = x) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = where(is.numeric)) |> 
+  sub_small_vals(columns = 'demo_col', threshold = 1, sign = '-') |> 
+  sub_large_vals(columns = 'demo_col', threshold = 50, sign = '-')
+```
+
+
+### Replace both
+
+```{r}
+tibble(x = c(-100, 100, 0.01, -0.01), demo_col = x) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = where(is.numeric)) |> 
+  sub_small_vals(columns = 'demo_col', threshold = 1, sign = '+') |> 
+  sub_large_vals(columns = 'demo_col', threshold = 50, sign = '+') |> 
+  sub_small_vals(columns = 'demo_col', threshold = 1, sign = '-') |> 
+  sub_large_vals(columns = 'demo_col', threshold = 50, sign = '-')
+```
+
+:::
+
+The last `sub_*()` function is `sub_values()`.
+It is the most powerful function of the `sub_*()` family because it can replace numbers and texts.
+For that it has a `values` and `pattern` argument.
+In case you're wondering, you can only use one of them at a time.
+If you specify both, `pattern` will always take precedence.
+
+But there's more.
+It also has an `fn` argument.
+You could use it to let an arbitrary function decide which values get replaced.
+In order for this to work, this function must take a column and return a `TRUE`/`FALSE` vector of the same length.
+
+Let's take a look at a couple of examples.
+
+::: tabset-panel
+
+### Replace by values
+
+```{r}
+exibble |>
+  select(num) |> 
+  mutate(demo_col = num) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = everything()) |> 
+  sub_values(
+    columns = 'demo_col',
+    values = c(0.111, 777000),
+    replacement = 'REPLACED'
+  )
+```
+
+### Replace by pattern
+
+```{r}
+exibble |>
+  select(char) |> 
+  mutate(demo_col = char) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  sub_values(
+    columns = 'demo_col',
+    pattern = '(a|e)',
+    replacement = 'fruit contains an a or e'
+  )
+```
+
+
+### Replace by function
+
+```{r}
+exibble |>
+  select(num) |> 
+  mutate(demo_col = num) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = everything()) |> 
+  sub_values(
+    columns = 'demo_col',
+    fn = function(x) between(x, 10, 10000),
+    replacement = 'Between 10 and 10000'
+  )
+```
+
+:::
+
+## Summary
+
+That's a wrap on this chapter.
+We've got the formatting options covered.
+Time to get to the most complicated part of our tables: Their theme.
+
+Just like in a ggplot we can style more or less every part of our table.
+And if you're familiar with HTML/CSS you can even apply custom styles that have not been implemented in `{gt}` yet.

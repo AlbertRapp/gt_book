@@ -1,0 +1,4 @@
+# Quarto and {gt} {#sec-quarto}
+
+
+## Column widths

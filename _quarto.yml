@@ -1,0 +1,30 @@
+project:
+  type: book
+
+book:
+  title: "Creating beautiful tables in R with {gt}"
+  author: "Albert Rapp"
+  date: today
+  chapters:
+    - index.qmd
+    - getting_started.qmd
+    - fancy_stuff.qmd
+    - formatting.qmd
+    - styling.qmd
+    - case_studies.qmd
+    - quarto_gt.qmd
+
+
+format:
+  html:
+    tbl-cap-location: margin
+    fig-cap-location: margin
+    theme: 
+      - theme.scss
+
+knitr:
+  opts_chunk: 
+    collapse: true
+    
+editor: visual
+

@@ -1,0 +1,598 @@
+# Getting started {#sec-getting-started}
+
+```{r}
+#| echo: false
+library(knitr)
+knit_print.gt <- function(x, ...) {
+  # Two steps to avoid most Quarto changes of my table styles: 
+  # 1. as_raw_html() to use table styles *inline*
+  # 2. wrap output in a div that resets all Quarto styles
+  stringr::str_c(
+    "<div style='all:initial';>\n", 
+    gt::as_raw_html(x), 
+    "\n</div>"
+  ) |> 
+    knitr::asis_output()
+}
+registerS3method(
+  "knit_print", 'gt_tbl', knit_print.gt, 
+  envir = asNamespace("gt") 
+  # important to overwrite {gt}s knit_print
+)
+```
+
+In this chapter, we're going to do two things:
+
+1.  Learn simple guidelines for better tables
+2.  Implement them with {gt}
+
+Of course we will need data for that.
+I like penguins, so we're going to use the fabulous `penguins` data set from `{palmerpenguins}`.
+
+```{r}
+#| message: false
+#| warning: false
+library(tidyverse)
+penguins <- palmerpenguins::penguins |> filter(!is.na(sex))
+penguins
+```
+
+From that data let us compute a couple of simple counts.
+To get started, this is probably an easy data set to put into a table.
+
+```{r}
+penguin_counts <- penguins |> 
+  mutate(year = as.character(year)) |> 
+  group_by(species, island, sex, year) |> 
+  summarise(n = n(), .groups = 'drop')
+penguin_counts
+```
+
+In actual table, the data would probably be rearranged a bit.
+There's nothing wrong with this long (i.e. many rows) data format.
+In fact, this format is great for data analysis.
+But in a table that is meant to be read by humans, not machines, you'll probably go with a wider format.
+
+```{r}
+penguin_counts_wider <- penguin_counts |> 
+  pivot_wider(
+    names_from = c(species, sex),
+    values_from = n
+  ) |> 
+  # Make missing numbers (NAs) into zero
+  mutate(across(.cols = -(1:2), .fns = ~replace_na(., replace = 0))) |> 
+  arrange(island, year) 
+penguin_counts_wider
+```
+
+Now, let's put this into a table.
+Not too long ago I would have probably visualized the data with a table like this:
+
+![A not so sexy table of our `penguins_counts_wider` data set created by yours truly with LibreOffice Calc (spreadsheet software - double ugh. Though, compared to Excel it's open-source. So maybe 1.5 ugh?)](img/stupid_table_screenshot.png){#fig-terrible-tbl fig-align="center" width="90%"}
+
+Ugh.
+This is not a sexy table.
+I get bored just looking at that.
+So let's improve this table.
+To do so, here are the 6 guidelines that will, well, guide us.
+
+1.  Avoid vertical lines
+2.  Use better column names
+3.  Align columns
+4.  Use groups instead of repetitive columns
+5.  Remove missing numbers
+6.  Add summaries
+
+## Avoid vertical lines
+
+This is the guideline that gives you the biggest bang for your buck.
+The above table uses waaaay to many grid lines.
+Without vertical lines, the table will look less cramped.
+
+Thankfully, `{gt}` seems to live by this rule as it is implemented by default.
+Thus, we only need to pass our data set `penguin_counts_wider` to `gt()`.
+You can think of this function as the `ggplot()` analogue.
+It's the starting point of any table in the `{gt}` universe.
+
+```{r}
+library(gt)
+penguin_counts_wider |> 
+  gt() 
+```
+
+This isn't a great table yet but it's a start.
+In any case, it feels more open due to less grid lines.
+Of course, the column labels could be better which brings us to our next point.
+
+## Use better column names
+
+To change the column names use the `cols_layer()` "layer".
+Much like `{ggplot2}`, `{gt}` works with layers.
+To change anything about the table, we just pass the table from layer to the next.
+This works with piping.
+Armed with that knowledge, we could label the columns like we did in [@fig-terrible-tbl].
+
+```{r}
+#| label: tbl-test
+#| tbl-cap: This is a test
+penguin_counts_wider |> 
+  gt() |> 
+  cols_label(
+    island = 'Island',
+    year = 'Year',
+    Adelie_female = 'Adelie (female)',
+    Adelie_male = 'Adelie (male)',
+    Chinstrap_female = 'Chinstrap (female)',
+    Chinstrap_male = 'Chinstrap (male)',
+    Gentoo_female = 'Gentoo (female)',
+    Gentoo_male = 'Gentoo (male)',
+  )
+```
+
+But this isn't a great way to label the columns.
+So let's do something else instead.
+First, let us create so-called **spanners**.
+This joins columns and can be done with `tab_spanner()` layers.
+You'll need one layer for each spanner.
+
+```{r}
+penguin_counts_wider |> 
+  gt() |> 
+  cols_label(
+    island = 'Island',
+    year = 'Year',
+    Adelie_female = 'Adelie (female)',
+    Adelie_male = 'Adelie (male)',
+    Chinstrap_female = 'Chinstrap (female)',
+    Chinstrap_male = 'Chinstrap (male)',
+    Gentoo_female = 'Gentoo (female)',
+    Gentoo_male = 'Gentoo (male)',
+  ) |> 
+  tab_spanner(
+    label = md('**Adelie**'),
+    columns = 3:4
+  ) |> 
+  tab_spanner(
+    label = md('**Chinstrap**'),
+    columns = c('Chinstrap_female', 'Chinstrap_male')
+  ) |> 
+  tab_spanner(
+    label =  md('**Gentoo**'),
+    columns = contains('Gentoo')
+  )
+```
+
+As you can see, `tab_spanner()` always requires two arguments `label` and `columns`.
+For the `columns` argument I have shown you three ways to get the job done:
+
+1.  Vector of column numbers
+2.  Vector of column names
+3.  [tidyselect helpers](https://tidyselect.r-lib.org/reference/language.html)
+
+For the `label` argument you can either just state a `character` vector or you can wrap one in `md()` to enable Markdown syntax (like `**bold text**`).
+
+Okay now we don't really need the Species labels in the actual column names anymore.
+The spanners already state that for us.
+So, let us modify our previous code to rename the columns.
+To do so, let me show you a cool trick that may save you some tedious typing.
+
+First, we create a named vector that contains the actual and the desired column names.
+
+```{r}
+actual_colnames <- colnames(penguin_counts_wider)
+actual_colnames
+desired_colnames <- actual_colnames |> 
+  str_remove('(Adelie|Gentoo|Chinstrap)_') |> 
+  str_to_title()
+
+names(desired_colnames) <- actual_colnames
+desired_colnames
+```
+
+Then, we can use this named vector as the `.list` argument in `cols_label()`.
+
+```{r}
+penguin_counts_wider |> 
+  gt() |> 
+  cols_label(.list = desired_colnames) |> 
+  tab_spanner(
+    label = md('**Adelie**'),
+    columns = 3:4
+  ) |> 
+  tab_spanner(
+    label = md('**Chinstrap**'),
+    columns = c('Chinstrap_female', 'Chinstrap_male')
+  ) |> 
+  tab_spanner(
+    label =  md('**Gentoo**'),
+    columns = contains('Gentoo')
+  )
+```
+
+Finally, while we're currently changing labels, let us add an important label - the title.
+The `tab_header()` layer does the trick.
+
+```{r}
+penguin_counts_wider |> 
+  gt() |> 
+  cols_label(.list = desired_colnames) |> 
+  tab_spanner(
+    label = md('**Adelie**'),
+    columns = 3:4
+  ) |> 
+  tab_spanner(
+    label = md('**Chinstrap**'),
+    columns = c('Chinstrap_female', 'Chinstrap_male')
+  ) |> 
+  tab_spanner(
+    label =  md('**Gentoo**'),
+    columns = contains('Gentoo')
+  ) |> 
+  tab_header(
+    title = 'Penguins in the Palmer Archipelago',
+    subtitle = 'Data is courtesy of the {palmerpenguins} R package'
+  ) 
+```
+
+We will learn more on labels like captions and footnotes, let me refer you to [@sec-annotation].
+For now, let us talk about our next guideline.
+
+Before we can do that, let me mention one small thing: Our spanners and headers will not change as we move along this tutorial.
+To avoid repeating them all the time, let me wrap them in a function.
+
+```{r}
+spanners_and_header <- function(gt_tbl) {
+  gt_tbl |> 
+    tab_spanner(
+      label = md('**Adelie**'),
+      columns = 3:4
+    ) |> 
+    tab_spanner(
+      label = md('**Chinstrap**'),
+      columns = c('Chinstrap_female', 'Chinstrap_male')
+    ) |> 
+    tab_spanner(
+      label =  md('**Gentoo**'),
+      columns = contains('Gentoo')
+    ) |> 
+    tab_header(
+      title = 'Penguins in the Palmer Archipelago',
+      subtitle = 'Data is courtesy of the {palmerpenguins} R package'
+    ) 
+}
+
+# This produces the same output
+penguin_counts_wider |> 
+  gt() |> 
+  cols_label(.list = desired_colnames)  |> 
+  spanners_and_header() 
+```
+
+## Align columns
+
+Did you notice that `gt()` aligned the columns differently?
+That's because the columns of the corresponding `data.frame`/`tibble` contained different data types.
+Specifically:
+
+-   the counts are `integers` and aligned to the right
+
+-   the `year` column is a `character` vector and uses alignment to the left (though it's not totally visible because the column is narrow)
+
+-   the `island` column is a `factor` and uses center alignment (even though its entries are `character`s)
+
+It's a good default to align numbers to the right and texts to the left.
+Why?
+Because it's more readable.
+Need an example?
+Here's one.
+Most (western) people will probably say that the left column is the easiest to read because we read from left to right.
+
+```{r}
+#| echo: false
+#| message: false
+
+size <- 5
+read_csv2('data/ratios.csv') |> 
+  mutate(location = str_remove(location, ' Location')) |> 
+  ggplot() +
+  geom_text(
+    aes(x = 0, y = seq_along(location), label = location),
+    hjust = 0,
+    size = size,
+    color = 'grey20'
+  ) +
+  geom_text(
+    aes(x = 3, y = seq_along(location), label = location),
+    hjust = 0.5,
+    size = size,
+    color = 'grey20'
+  ) +
+  geom_text(
+    aes(x = 6, y = seq_along(location), label = location),
+    hjust = 1,
+    size = size,
+    color = 'grey20'
+  ) +
+  coord_cartesian(xlim = c(0, 6)) +
+  theme_void()
+```
+
+For numbers it's the other way around.
+That's because right-aligned numbers make it easy to see how many digits a number has compared to other numbers.
+This assumes that your numbers use a font that assign equal width to all digits (monospace fonts).
+
+So, let us align the `island` and `year` column.
+We can either do this by transforming the data types before even calling `gt()`.
+Or we use the `cols_align()` layer.
+Once again, this layer understands text locations and tidyselection helpers.
+
+::: panel-tabset
+## Conversion
+
+```{r}
+penguin_counts_wider |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year)
+  ) |> 
+  gt() |> 
+  cols_label(.list = desired_colnames) |> 
+  spanners_and_header() 
+```
+
+## Align
+
+```{r}
+penguin_counts_wider |> 
+  gt() |> 
+  cols_label(.list = desired_colnames) |> 
+  spanners_and_header()  |> 
+  cols_align(align = 'right', columns = 'year') |> 
+  cols_align(
+    align = 'left', 
+    columns = where(is.factor)
+  )
+```
+:::
+
+## Use groups instead of repetitive columns
+
+The `island` column is somewhat repetitive.
+In cases like these, I'd rather remove the column.
+Instead, I would group the table using additional rows.
+I like to think that this comes with better readability.
+
+With `{gt}` this grouping is easy.
+We only need to specify the `groupname_col` argument in `gt()`.
+If we want, we can also set the `rowname_col` argument to `year`.
+This will format the "Year" column a bit differently.
+
+::: panel-tabset
+## Groups
+
+```{r}
+penguin_counts_wider |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year)
+  ) |> 
+  gt(groupname_col = 'island') |> 
+  cols_label(.list = desired_colnames) |> 
+  spanners_and_header() 
+```
+
+## Groups + row names
+
+```{r}
+penguin_counts_wider |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year)
+  ) |> 
+  gt(groupname_col = 'island', rowname_col = 'year') |> 
+  cols_label(.list = desired_colnames) |> 
+  spanners_and_header() 
+```
+:::
+
+In this case, I prefer the latter style because we don't really need a "Year" label to identify 2007, 2008 and 2009 as years.
+But an island label could be nice (I'm really bad with geography).
+The easiest way to add that to the group names is via string manipulation before `gt()` is called.
+
+```{r}
+penguin_counts_wider |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(groupname_col = 'island', rowname_col = 'year') |> 
+  cols_label(.list = desired_colnames) |> 
+  spanners_and_header() 
+```
+
+## Remove missing numbers
+
+Notice that our table has a lot of zeroes in it.
+For better readability, let us replace the zeroes with something more lightweight.
+We accomplish this with the `sub_zero()` layer.
+
+```{r}
+penguin_counts_wider |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(groupname_col = 'island', rowname_col = 'year') |> 
+  cols_label(.list = desired_colnames) |> 
+  spanners_and_header()  |> 
+  sub_zero(zero_text = '-') 
+```
+
+There are more `sub_*()` functions in `{gt}`.
+We will learn about them in [@sec-sub-functions].
+
+## Add summaries
+
+Now, this table looks already cleaner than what we started with.
+In this format, we could even add **more information** at little cost.
+
+For example, we could add a summary for each group.
+In this case, a summary could be as simple as a total or maximum over all years (we'll just assume that this makes sense for our penguin data).
+
+Here, the key layer is `summary_rows()`.
+Let's have a look at what it can produce and then I'll explain.
+
+```{r}
+penguin_counts_wider |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(groupname_col = 'island', rowname_col = 'year') |> 
+  cols_label(.list = desired_colnames) |> 
+  spanners_and_header()  |> 
+  sub_zero(zero_text = '-') |>
+  summary_rows(
+    groups = TRUE,
+    fns = list(
+      'Maximum' = ~max(.),
+      'Total' = ~sum(.)
+    ),
+    formatter = fmt_number,
+    decimals = 0
+  ) 
+```
+
+The `summary_rows()` function works with a named list of functions (one function for each summary).
+As you've seen, you can create one using `list('Name' = ~fct(.))`.
+In this case, `.` represents the column data.
+All other arguments can be named as usual.
+For example, you could do something like `~mean(., na.rm = TRUE)`.[^getting_started-1]
+
+[^getting_started-1]: Currently, this is the only possible way to define functions in `summary_rows()`.
+    The documentation of this function says something different but this is a [known issue](https://github.com/rstudio/gt/issues/921).
+
+Notice that I had to set `groups = TRUE`.
+Otherwise, we would get summary rows at the end of the table (using all data).
+This is also known as a "grand summary".
+
+Further, the output of the summary function had to be formatted.
+By default the output would contain two decimals.
+So, we'd get numbers like `9.00`.
+Here, `fmt_number()` is the formatter that corrected that.
+But we had to tell it to use `decimals = 0`.
+We'll learn more about the `fmt_*()` family in [@sec-fmt-functions].
+
+Now that we've added more information to the table, it became quite long.
+We can amend that by reducing the row heights.
+Frankly, they have been too large for my taste for some time now.
+
+To do so, we could set the so-called `data_row.padding` to 2 pixels.
+This is done with `tab_options()`, the premier layer to style the table[^getting_started-2].
+Similarly, there are padding options for `summary_row` and `row_group`[^getting_started-3]. And while we're at it, why not apply a pre-defined theme to our table with `opt_stylize()`.
+
+[^getting_started-2]: Basically, this is the analogue of `theme()` in `{ggplot2}`.
+
+[^getting_started-3]: I'm not sure why it's not `group_row` but we'll just go with it.
+    ![](img/be-the-leaf-dance.gif)
+
+```{r}
+penguin_counts_wider |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(groupname_col = 'island', rowname_col = 'year') |> 
+  cols_label(.list = desired_colnames) |> 
+  spanners_and_header()  |> 
+  sub_zero(zero_text = '-') |>
+  summary_rows(
+    groups = TRUE,
+    fns = list(
+      'Maximum' = ~max(.),
+      'Total' = ~sum(.)
+    ),
+    formatter = fmt_number,
+    decimals = 0
+  )  |> 
+  tab_options(
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  opt_stylize(style = 6, color = 'gray')
+```
+
+This has been a little foretaste of styling a table.
+We'll learn more about changing a table's theme in [@sec-theming].
+
+Finally, let me address the big inconsistency in the room.
+We have replaced the zeroes by `-` earlier.
+However, the summary rows still display `0`.
+Unfortunately, there is no `sub_zero()` function that targets the summary rows.
+So, we'll do something else instead.
+
+In our data set we have replaced all `NA`s with zero.
+But we didn't have to do that.
+We could just let them be `NA`s and use `sub_missing()` to replace them.
+In `summary_rows()`, we could then use `missing_text = "-"`.
+I think you get the idea, so I'm just going to fold the code (so you can focus on the result).
+
+```{r}
+#| code-fold: true
+penguin_counts_wider |> 
+  mutate(across(.cols = -(1:2), ~if_else(. == 0, NA_integer_, .))) |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(groupname_col = 'island', rowname_col = 'year') |> 
+  cols_label(.list = desired_colnames) |> 
+  spanners_and_header()  |> 
+  sub_missing(missing_text = '-') |>
+  summary_rows(
+    groups = TRUE,
+    fns = list(
+      'Maximum' = ~max(.),
+      'Total' = ~sum(.) 
+    ),
+    formatter = fmt_number,
+    decimals = 0,
+    missing_text = '-'
+  )  |> 
+  tab_options(
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  opt_stylize(style = 6, color = 'gray')
+```
+
+## Summary
+
+We've started this chapter with a terrible table that needed improvement.
+Over the course of this chapter, we learned and applied six guidelines with `{gt}`.
+These guidelines were
+
+1.  Avoid vertical lines
+2.  Use better column names
+3.  Align columns
+4.  Use groups instead of repetitive columns
+5.  Remove missing numbers
+6.  Add summaries
+
+In the table business, these guidelines are pretty basic.
+I don't mean basic in a bad or boring way.
+It's just that these are solid recommendations that improve tables without any fancy stuff.
+No icons, no pictures, no other eye-catching elements.
+Just plain data formatted carefully.
+
+So now we've learned the basics.
+No need to stop there.
+Let's learn the fancy stuff too.
+That's what we'll do in the next chapter.

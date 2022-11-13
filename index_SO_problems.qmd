@@ -1,0 +1,661 @@
+---
+execute: 
+  echo: false
+  message: false
+  warning: false
+knitr: 
+  opts_chunk: 
+    column: body
+---
+
+
+
+# Tables (lots of them)
+
+Before `as_raw_html()` was able to include images or custom styles like `gtExtras::gt_theme_538()` with inline CSS, it was a bit tricky to include tables in Quarto docs.
+I've spent some time trying to manually change all table classes in the html so that Quarto cannot overwrite it.
+Still, some stuff like line heights are still inherited from the surrounding Quarto doc (regardless of whether you use `as_raw_html()` or my function).
+I solved this issue by wrapping the code chunk into a div using `style="all:initial;"` (maybe there's a more elegant solution).
+
+In some cases, `as_raw_html()` does not seem to adjust line styles.
+Below, I've tested a few (non-minimal) table examples to see how the formatting may or may not change.
+In my examples, there were mainly two issues.
+
+- `as_raw_html()` still needs a surrounding div with `style="all:initial;"`
+- Small line heights lead to scroll bars that are not there when creating the table outside of Quarto
+- Line styles are not adjusted with `as_raw_html()`.
+
+## My main function
+
+The new `as_raw_html()` is probably preferable to my own function (as it likely won't work with nested tables). 
+But since my function does not have the issue with the line formatting I've kept it here for comparisons.
+
+
+```{r}
+#| echo: true
+#| code-fold: true
+make_tbl_quarto_robust <- function(tbl) {
+  # Get tbl html code (without the inline stuff)
+  tbl_html <- tbl |>
+    as_raw_html(inline_css = FALSE) 
+  
+  # Find table id
+  tbl_id <-  str_match(tbl_html, 'id="(.*)"\\s')[,2] 
+  
+  # Split html so that we only replace strings in the css part at first
+  # That's important for performance
+  split_html <- tbl_html |> 
+    str_split_1('<table class="gt_table".{0,}>')
+  css_part <- split_html[1] |> 
+    str_split_1('<style>')
+  
+  # Create regex to add table id
+  my_regex <- str_c('(', tbl_id, ' )?(.* \\{)')
+  replaced_css <- css_part[2] |>
+    # Make global html changes more specific
+    str_replace_all('html \\{', str_c(tbl_id, ' .gt_table {')) |> 
+    # Make changes to everything specific to the table id
+    str_replace_all(my_regex, str_c('\\#', tbl_id, ' \\2')) |> 
+    # Replace duplicate names 
+    str_replace_all(
+      str_c('\\#', tbl_id, ' \\#', tbl_id),
+      str_c('\\#', tbl_id)
+    )
+  
+  # Put split html back together
+  str_c(
+    css_part[1], '<style>', 
+    replaced_css, '<table class="gt_table">', 
+    split_html[2]
+  ) |> 
+    # Rename all gt_* classes to new_gt_*
+    str_replace_all('(\\.|class="| )gt', '\\1new_gt') |> 
+    # Reformat as html
+    html()
+}
+```
+
+
+## Line height issue
+
+In this table, the line heights seem to still be inherited if we don't wrap our div in `style="all:initial;"`. 
+Beware that the screenshoted table uses full width whereas the other tables are restricted to the page column of this Quarto doc.
+
+```{r}
+#| code-fold: true
+#| echo: true
+library(tidyverse)
+library(gt)
+library(gtExtras)
+
+penguins <- palmerpenguins::penguins |> filter(!is.na(sex))
+counts <- penguins |> 
+  mutate(year = as.character(year)) |> 
+  group_by(species, island, sex, year) |> 
+  summarise(n = n(), .groups = 'drop')
+
+
+counts_wider <- counts |> 
+  pivot_wider(
+    names_from = c(species, sex),
+    values_from = n
+  ) |> 
+  arrange(year)  |> # This will arrange each island as 07-08-09-total
+  mutate(island = paste('Island:', island)) |> 
+  ungroup()
+
+tbl <- counts_wider |> 
+  mutate(
+    island = str_remove(island, 'Island: '),
+    across(.cols = -(1:2), .fns = ~replace_na(., replace = 0))
+  ) |> 
+  arrange(island) |> 
+  gt(id = 'asdsdag') |> 
+  cols_label(
+    'island' = 'Island',
+    year = 'Year',
+    Adelie_female = 'Adelie (female)',
+    Adelie_male = 'Adelie (male)',
+    Chinstrap_female = 'Chinstrap (female)',
+    Chinstrap_male = 'Chinstrap (male)',
+    Gentoo_female = 'Gentoo (female)',
+    Gentoo_male = 'Gentoo (male)',
+  ) |> 
+  tab_header(title = 'Penguins in the Palmer Archipelago') |> 
+  tab_options(
+    heading.align = 'left'
+  ) |> 
+  gt_theme_538()
+```
+
+
+::: panel-tabset
+
+
+## Screenshot
+
+```{r}
+library(webshot2)
+gtsave(tbl, 'penguins_tbl.png')
+```
+
+![](penguins_tbl.png)
+
+
+## Own fct + initial
+
+::: {style="all:initial;"}
+```{r}
+tbl |> make_tbl_quarto_robust()
+```
+:::
+
+## raw_html
+
+```{r}
+tbl |> as_raw_html()
+```
+
+
+## raw_html + initial
+
+::: {style="all:initial;"}
+```{r}
+tbl |> as_raw_html()
+```
+:::
+
+:::
+
+
+## Narrow heights 
+
+It seems that narrow line heights lead to scroll bars in all cases.
+The original table does not have that.
+Though, the initial table has full width and is not restricted. 
+This may cause the issue?
+
+```{r}
+#| code-fold: true
+#| echo: true
+filtered_penguins <- palmerpenguins::penguins |>
+    filter(!is.na(sex))
+
+penguin_weights <- palmerpenguins::penguins |>
+  filter(!is.na(sex)) |>
+  group_by(species) |>
+  summarise(
+    Min = min(body_mass_g),
+    Mean = mean(body_mass_g) |> round(digits = 2),
+    Max = max(body_mass_g)
+  ) |>
+  mutate(species = as.character(species), Distribution = species) |>
+  rename(Species = species)
+
+
+plot_density_species <- function(species, variable) {
+  full_range <- filtered_penguins |>
+    pull({{variable}}) |>
+    range()
+
+  filtered_penguins |>
+    filter(species == !!species) |>
+    ggplot(aes(x = {{variable}}, y = species)) +
+    geom_violin(fill = 'dodgerblue4') +
+    theme_minimal() +
+    scale_y_discrete(breaks = NULL) +
+    scale_x_continuous(breaks = NULL) +
+    labs(x = element_blank(), y = element_blank()) +
+    coord_cartesian(xlim = full_range)
+}
+
+penguins <- penguin_weights |>
+  gt() |>
+  tab_spanner(
+    label = 'Penguin\'s Weight',
+    columns = -Species
+  ) |>
+  text_transform(
+    locations = cells_body(columns = 'Distribution'),
+    # Create a function that takes the a column as input
+    # and gives a list of ggplots as output
+    fn = function(column) {
+      map(column, ~plot_density_species(., body_mass_g)) |>
+        ggplot_image(height = px(50), aspect_ratio = 3)
+    }
+  ) |>
+  tab_options(table.font.names = 'Merriweather') |>
+  opt_css(
+    '.gt_table {
+      line-height:10px;
+    }'
+  )
+
+```
+
+::: panel-tabset
+
+
+## Screenshot
+
+```{r}
+library(webshot2)
+gtsave(penguins, 'penguins.png')
+```
+
+![](penguins.png)
+
+
+## Own fct + initial
+
+::: {style="all:initial;"}
+```{r}
+penguins |> make_tbl_quarto_robust()
+```
+:::
+
+## raw_html
+
+```{r}
+penguins |> as_raw_html()
+```
+
+
+## raw_html + initial
+
+::: {style="all:initial;"}
+```{r}
+penguins |> as_raw_html()
+```
+:::
+
+:::
+
+
+
+
+## Lines do not format correctly
+
+In all cases, the line between two countries looks thinner than in the screenshot.
+With `as_raw_html()` there is also a superfluous line below the last country in a continent.
+
+
+```{r}
+#| code-fold: true
+#| echo: true
+library(svglite)
+set.seed(34534)
+lifeexp_selected_countries <- gapminder::gapminder |>
+  janitor::clean_names() |>
+  select(continent, country, year, life_exp) |>
+  group_by(continent, country) |>
+  nest() |>
+  group_by(continent) |>
+  slice_sample(n = 2) |>
+  unnest(data) |>
+  pivot_wider(names_from = year, names_prefix = 'year', values_from = life_exp) |>
+  ungroup() |>
+  select(continent, country, ends_with('7'))
+
+
+new_colnames <- colnames(lifeexp_selected_countries) |>
+  str_remove('(country|year)')
+names(new_colnames) <- colnames(lifeexp_selected_countries)
+
+
+all_gapminder_data_selected_countries <- gapminder::gapminder |>
+  filter(
+    str_sub(year, start = 4) == '7',
+    country %in% unique(lifeexp_selected_countries$country)
+  )
+
+timeline_data <- all_gapminder_data_selected_countries |>
+  group_by(continent, country) |>
+  summarise(
+    timeline = list(lifeExp)
+  )
+
+lifeexp_comparison_data <- gapminder::gapminder |>
+  filter(year == 2007) |>
+  group_by(continent) |>
+  summarise(
+    mean_life_exp_2007 = mean(lifeExp)
+  )
+
+joined_data <- lifeexp_selected_countries |>
+  left_join(timeline_data) |>
+  left_join(lifeexp_comparison_data) |>
+  mutate(rep2007 = year2007)
+
+
+
+html_text <- 'Comparison 2007<br> <p style="color:#104e8b;display:inline;"> continent mean</p> | <p style="color:#1e90ff;display:inline;"> country</p>'
+
+sparkline_plot <- joined_data |>
+  arrange(year2007) |>
+  select(-c(mean_life_exp_2007, rep2007)) |>
+  ### Other data used here
+  gt(groupname_col = 'continent') |>
+  cols_label(.list = new_colnames) |>
+  fmt_number(columns = -c(country, timeline), decimals = 2) |>
+  gt_theme_538() |>
+  tab_header(
+    title = 'Life Expectancies over time',
+    subtitle = 'Data is courtesy of the Gapminder foundation'
+  ) |>
+  tab_options(
+    column_labels.font.weight = 'bold',
+    table.font.size = 16,
+    data_row.padding = px(3),
+    row_group.padding = px(4)
+  ) |>
+  gt_color_rows(
+    columns = c(year2007, year1957),
+    domain = c(30, 85),
+    palette = thematic::okabe_ito(4)[c(4, 2)]
+  ) |>
+  ### Add sparklines
+  gt_plt_sparkline(
+    column = timeline,
+    palette = c("grey40", "grey40", "grey40", "dodgerblue1", "grey40"),
+    fig_dim = c(5, 28)
+  )
+```
+
+
+
+::: panel-tabset
+
+
+## Screenshot
+
+```{r}
+library(webshot2)
+gtsave(sparkline_plot, 'sparkline.png')
+```
+
+![](sparkline.png)
+
+
+## Own fct + initial
+
+::: {style="all:initial;"}
+```{r}
+sparkline_plot |> make_tbl_quarto_robust()
+```
+:::
+
+## raw_html
+
+```{r}
+sparkline_plot |> as_raw_html()
+```
+
+
+## raw_html + initial
+
+::: {style="all:initial;"}
+```{r}
+sparkline_plot |> as_raw_html()
+```
+:::
+
+:::
+
+
+
+## Additional lines
+
+In this one, there's the problem of additional lines again.
+
+```{r}
+#| code-fold: true
+#| echo: true
+brands <- tibble(
+  Brand = c('twitter', 'facebook', 'linkedin', 'github'),
+  color = c('#1DA1F2', '#4267B2', '#0077B5', '#333' )
+) |>
+  mutate(
+    # Use html() function here so that {gt} knows what's going on
+    Emoji = map2(Brand, color, ~html(fontawesome::fa(.x, fill = .y))),
+    Brand = str_to_title(Brand)
+  ) |>
+  select(-color)
+
+brands_table <- brands |>
+  gt()  |>
+   # This part makes emojis larger and adds titles and footnote
+  tab_style(
+    style = list(cell_text(size = px(40))),
+    locations = cells_body(columns = 'Emoji')
+  ) |>
+  tab_header(
+    title = 'Brand table',
+    subtitle = 'It\'s surprisingly simple to include fontawesome icons in {gt} tables'
+  ) |>
+  tab_options(
+    table.font.names = 'Merriweather',
+    table.font.weight = 'bold',
+    table_body.hlines.style = 'dashed',
+    table_body.hlines.width = px(1),
+    table_body.hlines.color =  'white',
+    table_body.border.top.color = 'white',
+    table_body.border.top.style = px(1),
+    heading.border.bottom.width = px(1),
+    heading.border.bottom.color =  'white',
+    column_labels.border.bottom.width = px(1),
+    column_labels.border.bottom.color =  'white',
+    column_labels.font.weight = 'bold',
+    table.border.top.style = 'none',
+    table_body.border.bottom.color = 'white'
+  )
+```
+
+
+
+::: panel-tabset
+
+
+## Screenshot
+
+```{r}
+library(webshot2)
+gtsave(brands_table, 'brands.png')
+```
+
+![](brands.png)
+
+
+## Own fct + initial
+
+::: {style="all:initial;"}
+```{r}
+brands_table |> make_tbl_quarto_robust()
+```
+:::
+
+## raw_html
+
+```{r}
+brands_table |> as_raw_html()
+```
+
+
+## raw_html + initial
+
+::: {style="all:initial;"}
+```{r}
+brands_table |> as_raw_html()
+```
+:::
+
+:::
+
+
+## Body top-border-width is off
+
+For some reason, Body top-border is off in all cases.
+Also, lines are not dashed when using `as_raw_html()`.
+
+```{r}
+#| code-fold: true
+#| echo: true
+brands_tbl_background <- brands |>
+  gt(id = 'adfgadfgasf')  |>
+   # This part makes emojis larger and adds titles and footnote
+  tab_style(
+    style = list(cell_text(size = px(40))),
+    locations = cells_body(columns = 'Emoji')
+  ) |>
+  tab_header(
+    title = 'Brand table',
+    subtitle = 'It\'s surprisingly simple to include fontawesome icons in {gt} tables'
+  ) |>
+  tab_options(
+    table.font.names = 'Merriweather',
+    table.font.weight = 'bold',
+    heading.align = 'left',
+    table_body.hlines.style = 'dashed',
+    table_body.hlines.width = px(1),
+    table_body.hlines.color =  'white',
+    table_body.border.top.color = 'white',
+    table_body.border.top.style = px(1),
+    heading.border.bottom.width = px(1),
+    heading.border.bottom.color =  'white',
+    column_labels.border.bottom.width = px(1),
+    column_labels.border.bottom.color =  'white',
+    column_labels.font.weight = 'bold',
+    table.border.top.style = 'none',
+    table_body.border.bottom.color = 'white'
+  ) |>
+  opt_css(
+    css = '
+    .gt_table {
+      background: linear-gradient(135deg, #FFFB7D, #9599E2);
+    }
+
+    #adfgadfgasf .gt_heading, #adfgadfgasf .gt_col_heading {
+      background:transparent;
+    }
+
+    #adfgadfgasf .gt_col_headings {
+      border-top-color: white;
+      border-top-width: 1px;
+    }
+
+    '
+  )
+```
+
+::: panel-tabset
+
+
+## Screenshot
+
+```{r}
+library(webshot2)
+gtsave(brands_tbl_background, 'brands_background.png')
+```
+
+![](brands_background.png)
+
+
+## Own fct + initial
+
+::: {style="all:initial;"}
+```{r}
+brands_tbl_background |> make_tbl_quarto_robust()
+```
+:::
+
+## raw_html
+
+```{r}
+brands_tbl_background |> as_raw_html()
+```
+
+
+## raw_html + initial
+
+::: {style="all:initial;"}
+```{r}
+brands_tbl_background |> as_raw_html()
+```
+:::
+
+:::
+
+
+## Body top-border can be fixed manually
+
+Good news is that adding css code with `opt_css()` can fix most small issues I believe.
+Here that's demonstrated with the previous body-top-border issue.
+
+::: panel-tabset
+
+
+## Screenshot
+
+```{r}
+library(webshot2)
+gtsave(brands_tbl_background, 'brands_background.png')
+```
+
+![](brands_background.png)
+
+
+## Own fct + initial
+
+::: {style="all:initial;"}
+```{r}
+brands_tbl_background |> 
+  opt_css(
+    '#adfgadfgasf .gt_table_body {
+      border-top-color: white;
+      border-top-width: 1px;
+    }'
+  ) |> make_tbl_quarto_robust()
+```
+:::
+
+## raw_html
+
+```{r}
+brands_tbl_background |> 
+  opt_css(
+    '#adfgadfgasf .gt_table_body {
+      border-top-color: white;
+      border-top-width: 1px;
+    }'
+  ) |> as_raw_html()
+```
+
+
+## raw_html + initial
+
+::: {style="all:initial;"}
+```{r}
+brands_tbl_background |> 
+  opt_css(
+    '#adfgadfgasf .gt_table_body {
+      border-top-color: white;
+      border-top-width: 1px;
+    }'
+  ) |> as_raw_html()
+```
+:::
+
+:::
+
+
+## Session info
+
+```{r}
+sessioninfo::session_info()
+```
+
+```{bash}
+quarto check
+```
+
+

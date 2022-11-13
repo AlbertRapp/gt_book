@@ -1,0 +1,35 @@
+/*-- scss:defaults --*/
+
+$white:    #fff !default;
+$gray-100: #f8f9fa !default;
+$gray-200: #e9ecef !default;
+$gray-300: #dee2e6 !default;
+$gray-400: #ced4da !default;
+$gray-500: #adb5bd !default;
+$gray-600: #6c757d !default;
+$gray-700: #495057 !default;
+$gray-800: #343a40 !default;
+$gray-900: #212529 !default;
+$black:    #000 !default;
+
+$primary:  #06436e !default;
+$code-color: $primary !default;
+$font-family-base:  'Source Sans Pro',  'Lato', 'Merriweather', 'Roboto Regular', 'Cabin Regular' !default;
+$body-color: $gray-700 !default;
+$headings-font-family:  'Prata', 'Roboto', 'Playfair Display', 'Montserrat'    !default;
+$font-size-base: 1.1rem;
+
+/*-- scss:rules --*/
+
+ol > li {
+    margin-bottom: $font-size-base * 0.25;
+}
+
+
+#title-block-header.quarto-title-block.default .quarto-title .title {
+  font-family: "Oleo Script", "Libre Baskerville", $headings-font-family;
+  font-size: $font-size-base * 2.5;
+}
+
+
+

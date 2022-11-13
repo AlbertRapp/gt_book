@@ -1,0 +1,79 @@
+# Introduction {.unnumbered}
+
+I used to think that tables are dull lists of numbers.
+But I was wrong.
+Tables can be beautiful & engaging.
+And in this Quarto book, we're going to learn how to create such tables with R.
+More precisely, we will learn how to use the [`{gt}` package](https://gt.rstudio.com/index.html).
+
+[@sec-getting-started] is the starting point of our `{gt}` journey.
+It will cover both useful guidelines for any table and how to implement them with `{gt}`.
+You can think of this chapter as a quickstart guide.
+
+Afterwards, we're learning how to add eye-catching elements like plots, icons and images to our table in [@sec-fancy-stuff].
+Many of these elements are powered through the amazing [`{gtExtras}` package](https://jthomasmock.github.io/gtExtras/index.html).
+But you will also learn how to add any plot to your table.
+Regardless of whether it implemented in `{gtExtras}` or not.
+
+Next, we'll talk about formatting the entries of your table in [@sec-formatting].
+`{gt}` has two powerful sets of functions to get the job done, namely `fmt_*()` and `sub_*()`.
+These functions all work the same and are pretty easy to pick up.
+Hence, it's easy to format the data in your table the way you want/need.
+
+In [@sec-styling], we're learning how to change the theme of our table.
+This will be a long chapter.
+After all, we can basically change anything about our table's appearance.
+
+All of the knowledge that we've acquired in the previous chapters will culminate in [@sec-case-studies].
+That's where we will build two elaborate tables with `{gt}`.
+
+Finally, [@sec-quarto] is a special chapter dedicating to the interactions between [Quarto](https://quarto.org/) and `{gt}`.
+As of right now (Quarto `v1.2.267` & `{gt}` `v0.7.0.9000 Github (rstudio/gt@a4e108c)`),
+Quarto's default theme can interact with your `{gt}` table and change its theme.
+But there are ways to isolate Quarto from `{gt}`.
+This is what you'll learn in this chapter.
+
+
+
+## Prerequisites
+
+This Quarto book is meant for people with an intermediate knowledge of R, specifically the Tidyverse.
+I do not expect people to know HTML/CSS for the most parts.
+
+Throughout most of the book, we'll only to do small changes with HTML/CSS and these bits will be explained.
+But there will be parts in [@sec-styling] and the subsequent chapters that will talk about changing CSS styles.
+Feel free to skip these parts if you're uncomfortable with CSS.
+
+
+<!-- ## Formatting -->
+
+<!-- - `function()` -->
+<!-- - `{package}` (inline) -->
+<!-- - \{package\} (header) -->
+
+## About this book
+
+This book is completely free and the code is open-source.
+If you find the things you learn here useful, I'd appreciate it if you sponsor my work via [Buy Me Coffee](https://www.buymeacoffee.com/rappa753).
+Or if you're interested in working with me, I'm open to freelance work.
+You can book an appointment with me on [Calendly](https://calendly.com/r-a/30min).
+
+No pressure.
+You don't have to.
+I just mention this because I'd like to finance my current life style that enables me to write such extensive tutorials.
+
+<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="rappa753" data-color="#06436e" data-emoji="☕"  data-font="Lato" data-text="Support me" data-outline-color="#ffffff" data-font-color="#ffffff" data-coffee-color="#FFDD00" data-height="40px" ></script>
+
+## Session info
+
+Just so you're sure what versions I'm using. Here's my session info and my Quarto version.
+
+```{r}
+sessioninfo::session_info("installed")
+```
+
+```{bash}
+quarto check
+```
+
+
