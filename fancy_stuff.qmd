@@ -552,7 +552,7 @@ penguin_weights <- filtered_penguins |>
     Mean = mean(body_mass_g) |> round(digits = 2),
     Max = max(body_mass_g)
   ) |>
-  mutate(species = as.character(species), Distribution = species) |>
+  mutate(species = as.character(species)) |>
   rename(Species = species)
 
 
@@ -573,6 +573,7 @@ plot_density_species <- function(species, variable) {
 }
 
 penguin_weights |>
+  mutate(Distribution = Species) |> 
   gt() |>
   tab_spanner(
     label = 'Penguin\'s Weight',
@@ -746,6 +747,96 @@ penguin_weights |>
     }
   ) 
 ```
+
+We can take this up a notch.
+What if our plot depends on two or more variables?
+For example, we could label the mean weight of each species with a white line and the maximum with a red dot.
+
+Yeah, I know.
+Totally arbitrary example.
+But it's as good as any example, I suppose.
+
+So first you will need a new function that depends on three arguments.
+But you have to make sure that all numeric variables are understood as characters.
+Because that's how they will come in (you'll see why in a sec).
+To use them as actual numbers, convert them from text to number via `parse_number()`.
+
+```{r}
+plot_density_species_with_mean <- function(my_species, my_mean, my_max) {
+  full_range <- filtered_penguins |>
+    pull(body_mass_g) |>
+    range()
+
+  filtered_penguins |>
+    filter(species == my_species) |>
+    ggplot(aes(x = body_mass_g, y = species)) +
+    geom_violin(fill = 'dodgerblue4') +
+    geom_vline(
+      xintercept = parse_number(my_mean), # Parse number
+      color = 'white',
+      linewidth = 3
+    ) +
+    annotate(
+      'point', 
+      x = parse_number(my_max), # Parse number
+      y = 1, 
+      color = 'red', 
+      size = 25 ## Needs to be large since the image is small
+    ) +
+    theme_minimal() +
+    scale_y_discrete(breaks = NULL) +
+    scale_x_continuous(breaks = NULL) +
+    labs(x = element_blank(), y = element_blank()) +
+    coord_cartesian(xlim = full_range)
+}
+plot_density_species_with_mean('Adelie', '3700', '4775')
+```
+
+Next, we have to create a new column in our tibble that contains all the data.
+In this case, this means collecting `Species`, `Mean` and `Max` in a vector and wrapping that vector in a list.
+
+```{r}
+penguins_new <- penguin_weights |> 
+  group_by(Species) |> 
+  mutate(Distribution = list(c(Species, Mean, Max))) |> 
+  ungroup()
+penguins_new
+```
+
+Now comes the hard part.
+It requires a little bit of hacking.
+In principle, you have to write a function that transforms our table column `Distribution` into a ggplot.
+But take a look how `Distribution` looks in the table.
+
+```{r}
+penguins_new |> 
+  gt()
+```
+
+Our beautiful list of arguments for `plot_density_species_with_mean()` is saved as a text.
+This means that this extra function `fn` that we're going to pass to `text_transform()` needs to do a couple of things.
+
+1. Split the texts into separate arguments with `str_split_1()` (better output than `str_split()`)
+2. Pass the lists of arguments to `plot_density_species_with_mean()` and make sure that the arguments are placed correctly.
+3. Convert ggplot objects to images with `ggplot_image()`.
+
+And task 1 and 2 need to be wrapped in `map()` because they don't work on whole columns.
+
+```{r}
+penguins_new |> 
+  gt() |>
+  text_transform(
+    locations = cells_body(columns = 'Distribution'),
+    fn = function(column) {
+      map(column, ~str_split_1(., ', ')) |>
+        map(~plot_density_species_with_mean(.[1], .[2], .[3])) |>
+        ggplot_image(height = px(50), aspect_ratio = 3)
+    }
+  ) 
+```
+
+
+
 
 ## Summary
 

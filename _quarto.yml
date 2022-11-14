@@ -13,7 +13,7 @@ book:
     - styling.qmd
     - case_studies.qmd
     - quarto_gt.qmd
-
+  repo-url: https://github.com/AlbertRapp/gt_book
 
 format:
   html:

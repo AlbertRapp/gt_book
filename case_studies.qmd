@@ -612,6 +612,46 @@ tbl
 ```
 
 
+## LaTeX formulas
 
+In the absence of current support for formulas with MathJax
+
+```{r}
+#| include: false
+#| eval: false
+exams::tex2image(
+  '$\\overline{X_n} = \\sum\\limits_{k = 1}^{n} x_k $', 
+  format = 'svg', 
+  dir = here::here(), 
+  name = 'formula'
+)
+svg_formula_black <- readLines('formula.svg') |> 
+  str_flatten() 
+  
+svg_formula_white <- svg_formula_black |> 
+  str_replace_all('stroke:rgb\\(0%,0%,0%\\)', 'stroke:#FFFFFF') |> 
+  str_replace_all('fill:rgb\\(0%,0%,0%\\)', 'fill:#FFFFFF')
+
+exams::tex2image(
+  '$\\int_0^\\infty f(x) dx$', 
+  format = 'svg', 
+  dir = here::here(), 
+  name = 'formula2',
+  packages = 'amsmath'
+)
+svg_formula_black <- readLines('formula2.svg') |> 
+  str_flatten() |> 
+  str_replace_all('glyph', 'bam')
+
+tibble(char = svg_formula_black, char2 = 'bla') |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  tab_spanner(
+    label = md(svg_formula_white),
+    columns = 1:2
+  ) |> 
+  fmt_markdown(columns = 'char') |> 
+  tab_header(title = 'This is a table with formulas as svgs')
+```
 
 

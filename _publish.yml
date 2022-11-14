@@ -1,0 +1,4 @@
+- source: project
+  netlify:
+    - id: 0496a9d6-dbcf-462a-9c27-97f7f7beb4f9
+      url: 'https://gt.albert-rapp.de'

@@ -1,10 +1,58 @@
 # Styling {#sec-styling}
 
+```{r}
+#| echo: false
+library(knitr)
+knit_print.gt <- function(x, ...) {
+  # Two steps to avoid most Quarto changes of my table styles: 
+  # 1. as_raw_html() to use table styles *inline*
+  # 2. wrap output in a div that resets all Quarto styles
+  stringr::str_c(
+    "<div style='all:initial';>\n", 
+    gt::as_raw_html(x), 
+    "\n</div>"
+  ) |> 
+    knitr::asis_output()
+}
+registerS3method(
+  "knit_print", 'gt_tbl', knit_print.gt, 
+  envir = asNamespace("gt") 
+  # important to overwrite {gt}s knit_print
+)
+```
+
 ## Annotations {#sec-annotation}
 
 - title
 - caption
 - footnote
+
+
+
+```{r}
+library(gt)
+tbl <- gtcars |> 
+  dplyr::count(mfr, sort = TRUE) |> 
+  dplyr::slice(1:5) |> 
+  gt(id = 'my_tbl', rowname_col = 'mfr') |> 
+  opt_stylize(style = 3) |> 
+  cols_label(n = 'Number of cars') 
+
+tbl |> as_raw_html()
+
+tbl |> 
+  opt_css('
+   #my_tbl thead, tbody, tfoot, tr, td, th {
+      border-style: none;
+    }
+   ') |> 
+  as_raw_html()
+``` 
+
+
+
+
+
 
 ## Theming {#sec-theming}
 
