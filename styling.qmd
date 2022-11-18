@@ -3,13 +3,15 @@
 ```{r}
 #| echo: false
 library(knitr)
+
+
 knit_print.gt <- function(x, ...) {
   # Two steps to avoid most Quarto changes of my table styles: 
   # 1. as_raw_html() to use table styles *inline*
   # 2. wrap output in a div that resets all Quarto styles
   stringr::str_c(
     "<div style='all:initial';>\n", 
-    gt::as_raw_html(x), 
+    as_raw_html(x), 
     "\n</div>"
   ) |> 
     knitr::asis_output()
@@ -21,45 +23,1119 @@ registerS3method(
 )
 ```
 
-## Annotations {#sec-annotation}
+In this chapter, we're styling our tables.
+This means we're going to customize their theme.
+To do so, let us bring back our last table from [@sec-getting-started].
+This is the table we'll customize.
 
-- title
-- caption
-- footnote
-
-
+In this chapter, we don't really need the code of that table.
+So, I will only reprint the code in a folded section.
+Just know that the table is saved in a variable `penguins_table`.
 
 ```{r}
+#| code-fold: true
+library(tidyverse)
 library(gt)
-tbl <- gtcars |> 
-  dplyr::count(mfr, sort = TRUE) |> 
-  dplyr::slice(1:5) |> 
-  gt(id = 'my_tbl', rowname_col = 'mfr') |> 
-  opt_stylize(style = 3) |> 
-  cols_label(n = 'Number of cars') 
+penguins <- palmerpenguins::penguins |> filter(!is.na(sex))
+penguin_counts <- penguins |> 
+  mutate(year = as.character(year)) |> 
+  group_by(species, island, sex, year) |> 
+  summarise(n = n(), .groups = 'drop')
+penguin_counts_wider <- penguin_counts |> 
+  pivot_wider(
+    names_from = c(species, sex),
+    values_from = n
+  ) |> 
+  # Make missing numbers (NAs) into zero
+  mutate(across(.cols = -(1:2), .fns = ~replace_na(., replace = 0))) |> 
+  arrange(island, year) 
 
-tbl |> as_raw_html()
-
-tbl |> 
-  opt_css('
-   #my_tbl thead, tbody, tfoot, tr, td, th {
-      border-style: none;
-    }
-   ') |> 
-  as_raw_html()
-``` 
+actual_colnames <- colnames(penguin_counts_wider)
+desired_colnames <- actual_colnames |> 
+  str_remove('(Adelie|Gentoo|Chinstrap)_') |> 
+  str_to_title()
+names(desired_colnames) <- actual_colnames
 
 
+penguins_table <- penguin_counts_wider |> 
+  mutate(across(.cols = -(1:2), ~if_else(. == 0, NA_integer_, .))) |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(groupname_col = 'island', rowname_col = 'year') |> 
+  cols_label(.list = desired_colnames) |> 
+  tab_spanner(
+    label = md('**Adelie**'),
+    columns = 3:4
+  ) |> 
+  tab_spanner(
+    label = md('**Chinstrap**'),
+    columns = c('Chinstrap_female', 'Chinstrap_male')
+  ) |> 
+  tab_spanner(
+    label =  md('**Gentoo**'),
+    columns = contains('Gentoo')
+  ) |> 
+  tab_header(
+    title = 'Penguins in the Palmer Archipelago',
+    subtitle = 'Data is courtesy of the {palmerpenguins} R package'
+  ) |> 
+  sub_missing(missing_text = '-') |>
+  summary_rows(
+    groups = TRUE,
+    fns = list(
+      'Maximum' = ~max(.),
+      'Total' = ~sum(.) 
+    ),
+    formatter = fmt_number,
+    decimals = 0,
+    missing_text = '-'
+  )  |> 
+  tab_options(
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  opt_stylize(style = 6, color = 'gray')
+```
 
-
-
+```{r}
+penguins_table
+```
 
 ## Theming {#sec-theming}
 
-opt_stylize
+The easiest way to style a table is to apply a pre-installed theme via `opt_stylize()`.
+We've already done that in the first chapter because it's really easy to do.
+But there's nothing stopping us from overwritting the theme.
+Just apply another `opt_stylize()` layer to the table.
+
+```{r}
+penguins_table |> 
+  opt_stylize(style = 6, color = 'pink')
+```
 
 ### Tab options
 
+Next, we can tweak our table's appearance with `tab_options()`.
+It's basically the analogue of `theme()` in `{ggplot2}`.
+In [@sec-getting-started], we've already used `tab_options()` to apply three small changes.
+Once again, there's no harm in applying another layer of the same stuff.
+
+```{r}
+penguins_table |> 
+  tab_options(
+    # These were the ones we applied in the first chapter
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  )
+```
+
+But let's change a couple of things.
+Warning: These changes may or may not "improve" the table.
+We'll just apply stuff to learn what's going on.
+We can worry about aesthetics later.
+
+We'll start by styling the heading a little bit.
+All of the arguments in `tab_options()` that target the header start with `heading.`
+
+```{r}
+penguins_table |> 
+  tab_options(
+    # These were the ones we applied in the first chapter
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  # Change header theme
+  tab_options(
+    heading.align = 'left',
+    heading.background.color = 'darkgreen',
+    heading.title.font.size = px(20)
+  )
+```
+
+Next, let us attack our column labels.
+We'll do two things:
+
+1.  Change the background color (simple)
+2.  Remove the bottom border line (A bit tricky. You'll see why in a sec.)
+
+To achieve the latter thing, you need to change `border-style`.
+The most common are `solid`, `dashed`, `dotted` and `none`.
+Guess which one we're choosing.
+
+```{r}
+penguins_table |> 
+  tab_options(
+    # These were the ones we applied in the first chapter
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  # Change header theme
+  tab_options(
+    heading.align = 'left',
+    heading.background.color = 'darkgreen',
+    heading.title.font.size = px(20)
+  ) |> 
+  tab_options(
+    column_labels.background.color = 'yellow',
+    column_labels.border.bottom.style = 'none'
+  )
+```
+
+The effect of the color change is clearly visible.
+But what's that?
+There is still a line below the column labels.
+The reason for this is simple: There is no border below the `column_labels` area anymore.
+But there is still a border above the `table_body` and the `row_group`.
+Yes, that's right.
+You can only remove one line at the cost of three[^styling-1].
+
+[^styling-1]: There's probably some joke about inflation one could insert here.
+
+```{r}
+penguins_table |> 
+  tab_options(
+    # These were the ones we applied in the first chapter
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  # Change header theme
+  tab_options(
+    heading.align = 'left',
+    heading.background.color = 'darkgreen',
+    heading.title.font.size = px(20)
+  ) |> 
+  tab_options(
+    column_labels.background.color = 'yellow',
+    column_labels.border.bottom.style = 'none',
+    row_group.border.top.style = 'none',
+    table_body.border.top.style = 'none'
+  )
+```
+
+So how do you find out which areas might affect whatever it is that you want to style?
+Lucky for us, the [gt docs](https://gt.rstudio.com/index.html) have a neat image that shows you the areas of a `{gt}` table.
+
+```{r}
+#| echo: false
+#| label: fig-gt-areas
+#| fig-cap: This figure is taken straight form the [gt docs](https://gt.rstudio.com/index.html). I didn't find a license for this image. But I hope it's cool if I use it. Please let me know if not.
+
+knitr::include_graphics('https://gt.rstudio.com/reference/figures/gt_parts_of_a_table.svg')
+```
+
+There's one more way to find out what border you need to overwrite and we'll talk about it in [@sec-custom-css].
+For now, let me show you how you can target even more specific parts of your table.
+
 ### Cell styling
 
-### Custom CSS
+Imagine that you want to turn the Chinstrap column spanner blue (for whatever reason).
+You have seen that you can target only all column labels and all column spanners with `tab_options()`.
+For very specific wishes (like this one), there's `tab_style()`.
+
+This function has two arguments: `locations` and `style`.
+Does this remind you of something?
+That's right, it's very similar to `text_transform()` which you learned in [@sec-fancy-stuff].
+But instead of applying a text transformation function to a cell, we apply a style.
+
+Now, to specify `locations` and `style` we have two sets of helper functions.
+The location helpers translate more or less to the areas that you see in [@fig-gt-areas].
+
+::: columns
+::: column
+#### Location helpers {.unnumbered}
+
+-   `cells_body()`
+-   `cells_column_labels()`
+-   `cells_column_spanners()`
+-   `cells_footnotes()`
+-   `cells_grand_summary()`
+-   `cells_row_groups()`
+-   `cells_stub()`
+-   `cells_stub_grand_summary()`
+-   `cells_stub_summary()`
+-   `cells_stubhead()`
+-   `cells_summary()`
+-   `cells_title()`
+:::
+
+::: column
+#### Style helpers {.unnumbered}
+
+-   `cell_borders()`
+-   `cell_fill()`
+-   `cell_text()`
+:::
+:::
+
+Applying these helpers is pretty straightforward.
+Just use them for either `locations` or `style` in `tab_style()`.
+For example, we can use `cells_column_spanners()` to target all column spanners.
+And with `cell_fill()` we can turn them blue.
+
+```{r}
+penguins_table |> 
+  tab_options(
+    # These were the ones we applied in the first chapter
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  # Change header theme
+  tab_options(
+    heading.align = 'left',
+    heading.background.color = 'darkgreen',
+    heading.title.font.size = px(20)
+  ) |> 
+  tab_options(
+    column_labels.background.color = 'yellow',
+    column_labels.border.bottom.style = 'none',
+    row_group.border.top.style = 'none',
+    table_body.border.top.style = 'none'
+  ) |> 
+  tab_style(
+    locations = cells_column_spanners(),
+    style = cell_fill(color = 'dodgerblue')
+  )
+```
+
+Another cool way to target cells is `tab_style_body()`.
+Basically, it is a combination of `fmt()` from [@sec-formatting] and `tab_style()`.
+So, you can apply a style to table cells that either match a regex, correspond to a specific value or fulfill criteria according to your own custom function.
+Here's one example of that.
+
+```{r}
+penguins_table |> 
+  tab_options(
+    # These were the ones we applied in the first chapter
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  # Change header theme
+  tab_options(
+    heading.align = 'left',
+    heading.background.color = 'darkgreen',
+    heading.title.font.size = px(20)
+  ) |> 
+  tab_options(
+    column_labels.background.color = 'yellow',
+    column_labels.border.bottom.style = 'none',
+    row_group.border.top.style = 'none',
+    table_body.border.top.style = 'none'
+  ) |> 
+  tab_style(
+    locations = cells_column_spanners(),
+    style = cell_fill(color = 'dodgerblue')
+  ) |> 
+  tab_style_body(
+    fn = function(x) between(x, 5, 10),
+    style = cell_text(color = 'red', weight = 'bold')
+  )
+```
+
+Unfortunately, this function works only on cells in the body.
+Thus we have to find some other way to target the Chinstrap column spanner.
+To make this work, we have to assign an ID to the column spanner.
+Then, we can target that ID within `cells_column_spanners()`.
+Here's a minimal example of how that works.
+
+```{r}
+exibble |> 
+  select(1:4) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num') |> 
+  tab_spanner(
+    columns = 1:2, 
+    label = 'A column spanner', 
+    id = 'spannerA' ## That's the ID we can target
+  ) |> 
+  tab_spanner(
+    columns = 3:4, 
+    label = 'Another column spanner', 
+    id = 'spannerB' ## That's the ID we can target
+  )  |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'spannerA'),
+    style = cell_fill(color = 'darkgreen')
+  ) |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'spannerB'),
+    style = cell_fill(color = 'darkgreen', alpha = 0.5)
+  )
+```
+
+Applying this logic to our penguins table is straightforward.
+But you will have to copy the whole table code and insert an ID in the initial `gt()` layer.
+I think you get the idea.
+So here's only the result (unfold for full code).
+
+```{r}
+#| code-fold: true
+
+penguin_counts_wider |> 
+  mutate(across(.cols = -(1:2), ~if_else(. == 0, NA_integer_, .))) |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(groupname_col = 'island', rowname_col = 'year') |> 
+  cols_label(.list = desired_colnames) |> 
+  tab_spanner(
+    label = md('**Adelie**'),
+    columns = 3:4
+  ) |> 
+  tab_spanner(
+    label = md('**Chinstrap**'),
+    columns = c('Chinstrap_female', 'Chinstrap_male'),
+    id = 'chinstrap'
+  ) |> 
+  tab_spanner(
+    label =  md('**Gentoo**'),
+    columns = contains('Gentoo')
+  ) |> 
+  tab_header(
+    title = 'Penguins in the Palmer Archipelago',
+    subtitle = 'Data is courtesy of the {palmerpenguins} R package'
+  ) |> 
+  sub_missing(missing_text = '-') |>
+  summary_rows(
+    groups = TRUE,
+    fns = list(
+      'Maximum' = ~max(.),
+      'Total' = ~sum(.) 
+    ),
+    formatter = fmt_number,
+    decimals = 0,
+    missing_text = '-'
+  )  |> 
+  tab_options(
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  opt_stylize(style = 6, color = 'gray') |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'chinstrap'),
+    style = cell_fill(color = 'dodgerblue')
+  )
+```
+
+Notice that the grey border at the bottom of the Chinstrap column spanner looks kind of ugly.
+So, why not remove it?
+This is a great exercise of applying multiple styles.
+This is done by using multiple style helpers and collecting them in a list.
+The same works with location helpers.
+Here's a small example again.
+
+```{r}
+exibble |> 
+  select(1:4) |> 
+  gt() |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num') |> 
+  tab_spanner(
+    columns = 1:2, 
+    label = 'A column spanner', 
+    id = 'spannerA'
+  ) |> 
+  tab_spanner(
+    columns = 3:4, 
+    label = 'Another column spanner', 
+    id = 'spannerB'
+  )  |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'spannerA'),
+    style = cell_fill(color = 'darkgreen')
+  ) |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'spannerB'),
+    style = cell_fill(color = 'darkgreen', alpha = 0.5)
+  ) |> 
+  tab_style(
+    locations = list(
+      cells_column_labels(),
+      cells_body(
+        columns = c('char', 'date'), rows = c(3, 5, 8)
+      )
+    ),
+    style = list(
+      cell_fill(color = 'firebrick4'),
+      cell_text(color = 'white', size = 14, weight = 'bold'),
+      cell_borders(
+        sides = c('left', 'right'), 
+        color = 'green', 
+        weight = px(3)
+      )
+    )
+  )
+```
+
+Now, applying the same logic to our Chinstrap column spanner should be easy, right?
+It is.
+But unfortunately, it didn't help.
+Have a look for yourself.
+The border is still there.
+
+```{r}
+#| code-fold: true
+
+penguin_counts_wider |> 
+  mutate(across(.cols = -(1:2), ~if_else(. == 0, NA_integer_, .))) |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(groupname_col = 'island', rowname_col = 'year') |> 
+  cols_label(.list = desired_colnames) |> 
+  tab_spanner(
+    label = md('**Adelie**'),
+    columns = 3:4
+  ) |> 
+  tab_spanner(
+    label = md('**Chinstrap**'),
+    columns = c('Chinstrap_female', 'Chinstrap_male'),
+    id = 'chinstrap'
+  ) |> 
+  tab_spanner(
+    label =  md('**Gentoo**'),
+    columns = contains('Gentoo')
+  ) |> 
+  tab_header(
+    title = 'Penguins in the Palmer Archipelago',
+    subtitle = 'Data is courtesy of the {palmerpenguins} R package'
+  ) |> 
+  sub_missing(missing_text = '-') |>
+  summary_rows(
+    groups = TRUE,
+    fns = list(
+      'Maximum' = ~max(.),
+      'Total' = ~sum(.) 
+    ),
+    formatter = fmt_number,
+    decimals = 0,
+    missing_text = '-'
+  )  |> 
+  tab_options(
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  opt_stylize(style = 6, color = 'gray') |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'chinstrap'),
+    style = list(
+      cell_fill(color = 'dodgerblue'),
+      cell_borders(style = 'hidden')
+    )
+  )
+```
+
+The reason why this is happening is simple.
+It's a [known bug](https://github.com/rstudio/gt/issues/648).
+But that's not a problem.
+Actually, that's a great motivation for our next part.
+
+Whenever styling does not work as expected, `{gt}` allows you to sneak behind the HTML/CSS curtain.
+Then, you can manually apply whatever it is you want to apply.
+
+I know that this may sound daunting but it's actually quite manageable.
+I've learned most of what I know about HTML/CSS from [styling my Quarto blog](https://www.youtube.com/watch?v=ErRX8plZpQE).
+And most of that happened via copy-and-paste.
+With a little bit of effort, you can do the same.
+
+## Custom CSS {#sec-custom-css}
+
+Let's do a HTML/CSS quick tour.
+First, let us start with something you're already familiar with.
+You probably know that Markdown converts `**blabla**` to **blabla**, i.e. bold text.
+This means that with the right decoration, you can turn `blabla` into bold non-sense.
+
+### Tags and their styling
+
+The idea is the same for HTML/CSS.
+With the right decoration, you can transform any text into something else.
+The cool thing is that with HTML/CSS you can do more than "just" bold text.
+You have way more options to transform your text.
+
+Unfortunately, this power comes with a more verbose notation.
+For example, for bold inline text you could wrap `blabla` into `<span style="font-weight:bold;">...</span>`.
+In this case, `<span>...</span>` is just the tag to use inline text.
+This is not a particularly sexy thing to write.
+But it gives you the power to change more than just the font-weight inside the span tags.
+
+You could add styles as you see fit.
+For example, you continue the list within `style=` by adding.
+`color:blue;`, `font-family:Merriweather;`....and so on.
+
+Of course, there are not only `<span>` tags.
+For example, there's `<p>` for paragraphs, `<a>` for hyperlinks and `<div>` for sections aka divisions.
+In our case there's one more important tag that `{gt}` uses: `<table>`.
+
+### Classes and IDs
+
+Just like your Markdown documents, websites are really just decorated texts.
+Every little tweak on a website can be accomplished by adding the right instruction into `style=`.
+
+Now, comes the good part.
+You don't have to repeat your style instructions all the time.
+You can recycle your styles.
+That's what CSS classes do.
+
+Let's imagine that we want to recycle our previous style that used `color:blue;`, `font-family:Merriweather;` and `font-weight:bold;`.
+We can define a CSS class `my-style` that encodes that information as follows.
+
+``` css
+.my-style {
+  color:blue;
+  font-family:Merriweather;
+  font-weight:bold;
+}
+```
+
+Notice the `.` at the beginning.
+That's the secret class symbol in CSS.
+And that's also the only thing we need to know to overwrite the `gt_table` class to style our table like we want.
+The `opt_css()` layer will help us to get the CSS code into our website.
+
+```{r}
+library(gt)
+exibble |> 
+  gt() |> 
+  opt_css(
+    '
+    .gt_table {
+      color:blue;
+      font-family:Merriweather;
+      font-weight:bold;
+    }
+    '
+  )
+```
+
+Unfortunately, this did not change anything.
+Why?
+Because `{gt}` is clever enough to encode its styling not only with a global CSS class like `.gt_table` but also with a unique ID for every table.
+This ensures that you cannot accidentally change the styling of a different `{gt}` table.
+
+That's why you can assign a custom ID for your table in `gt()` and target that ID in your CSS code.
+The secret symbol for IDs in CSS is `#`.
+Armed with that knowledge, let us try again.
+
+```{r}
+library(gt)
+exibble |> 
+  gt(id = 'table_id') |> 
+  opt_css(
+    '
+    #table_id .gt_table {
+      color:blue;
+      font-family:Merriweather;
+      font-weight:bold;
+    }
+    '
+  )
+```
+
+Awesome.
+This worked.
+At least a bit.
+But the column labels remained the same.
+Here's why.
+
+The things that we want to change (`color`, `font-family` and `font-weight` of the column labels) are not styled in the `.gt_table` class.
+These are styled in `.gt_col_heading`.
+
+Hence, you need to target that class as well.
+Maybe with different instructions.
+
+```{r}
+exibble |> 
+  gt(id = 'table_id') |> 
+  opt_css(
+    '
+    #table_id .gt_table {
+      color:blue;
+      font-family:Merriweather;
+      font-weight:bold;
+    }
+    
+    #table_id .gt_col_heading {
+      color:red;
+      font-family:"Source Sans Pro";
+      font-weight:bold;
+    }
+    '
+  )
+```
+
+You'd think that if you target the `.gt_table` class you'd also target the `.gt_col_heading` class.
+You know, because column headings are part of a table.
+But that's not how CSS works.
+If you want to overwrite existing classes, you need to target the most specific one.
+
+So, how do you find out which one is the right class to target?
+The short answer is: Check it with your browser.
+On any website, you can right-click anywhere and then hit "Inspect".
+This will open the HTML and CSS code of the current website.
+
+Just use that on the website that displays your current table.
+In RStudio, I recommend that you hit the "Show in new window" button in the viewer panel.
+This will open your table in your default browser and then you can take a look at the table's code.
+
+And I know that what you see after you hit "Inspect" can really confusing if you've never worked with HTML or CSS before.
+Here's a video that can help you.
+I recorded this to help readers style their Quarto blog but the same principles apply here.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/ErRX8plZpQE" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
+
+</iframe>
+
+In this video, you can probably skip straight to 05:48 if you want to recap the HTML/CSS intro.
+Or you can skip to 10:28 if you just want to know how to navigate the code.
+
+So, let us put our new-found knowledge into practice.
+Let's do something that we couldn't do before, i.e adding a color gradient.
+We will apply it to our brands table from [@sec-fancy-stuff].
+Remember that one?
+Here it is again.
+
+```{r}
+brands <- tibble(
+  Brand = c('twitter', 'facebook', 'linkedin', 'github'),
+  color = c('#1DA1F2', '#4267B2', '#0077B5', '#333' )
+) |>
+  mutate(
+# Apply fa() function with all values from columns Brand and color
+    Emoji = map2(Brand, color, ~fontawesome::fa(.x, fill = .y)),
+# Apply html() function to previous results
+    Emoji = map(Emoji, html),
+    Brand = str_to_title(Brand)
+  ) |>
+  select(-color)
+
+brands |>
+  gt(id = 'brands-tbl') |>
+  tab_header(
+    title = 'Brand table',
+    subtitle = 'Icons are taken from the {fontawesome} package'
+  )  |>
+  tab_style(
+    style = list(cell_text(size = px(25))),
+    locations = cells_body(columns = 'Emoji')
+  )
+```
+
+To use a color gradient, we can target the `.gt_table` class and set its `background`.
+The CSS-code for a linear gradient is `linear-gradient()`.
+Shocker, I know!
+It requires an angle, e.g. `135deg`, and two colors.
+
+```{r}
+brands |>
+  gt(id = 'brands-tbl') |>
+  tab_header(
+    title = 'Brand table',
+    subtitle = 'Icons are taken from the {fontawesome} package'
+  )  |>
+# This part makes emojis larger
+  tab_style(
+    style = list(cell_text(size = px(25))),
+    locations = cells_body(columns = 'Emoji')
+  ) |> 
+  opt_css(
+    css = '
+    #brands-tbl .gt_table {
+      background: linear-gradient(135deg, #FFFB7D, #9599E2);
+    }
+    '
+  )
+```
+
+This worked almost as expected.
+The trick to color the full table is to target the column headings and the table heading and make their background transparent.
+
+```{r}
+brands |>
+  gt(id = 'brands-tbl') |>
+  tab_header(
+    title = 'Brand table',
+    subtitle = 'Icons are taken from the {fontawesome} package'
+  )  |>
+# This part makes emojis larger
+  tab_style(
+    style = list(cell_text(size = px(25))),
+    locations = cells_body(columns = 'Emoji')
+  ) |> 
+  opt_css(
+    css = '
+    #brands-tbl .gt_table {
+      background: linear-gradient(135deg, #FFFB7D, #9599E2);
+    }
+    
+     #brands-tbl .gt_heading, #brands-tbl .gt_col_heading {
+        background:transparent;
+      }
+    '
+  )
+
+
+```
+
+Are color gradients useful for a table?
+I don't know.
+But I think they look fancy.
+So here's another familiar table restyled with a color gradient.
+
+```{r}
+#| code-fold: true
+library(tidyverse)
+library(gt)
+
+filtered_penguins <- palmerpenguins::penguins |>
+    filter(!is.na(sex))
+
+penguin_weights <- palmerpenguins::penguins |>
+  filter(!is.na(sex)) |>
+  group_by(species) |>
+  summarise(
+    Min = min(body_mass_g),
+    Mean = mean(body_mass_g) |> round(digits = 2),
+    Max = max(body_mass_g)
+  ) |>
+  mutate(species = as.character(species), Distribution = species) |>
+  rename(Species = species)
+
+plot_density_species_gradient <- function(species, variable) {
+  full_range <- filtered_penguins |>
+    pull({{variable}}) |>
+    range()
+
+  filtered_penguins |>
+    filter(species == !!species) |>
+    ggplot(aes(x = {{variable}}, y = species)) +
+    geom_violin(fill = 'white', col = 'black', linewidth = 2) +
+    theme_minimal() +
+    scale_y_discrete(breaks = NULL) +
+    scale_x_continuous(breaks = NULL) +
+    labs(x = element_blank(), y = element_blank()) +
+    coord_cartesian(xlim = full_range)
+}
+
+penguin_weights |>
+  gt(id = 'weights-tbl') |>
+  tab_spanner(
+    label = 'Penguin\'s weight',
+    columns = -Species
+  ) |>
+  text_transform(
+    locations = cells_body(columns = 'Distribution'),
+    # Create a function that takes the a column as input
+    # and gives a list of ggplots as output
+    fn = function(column) {
+      map(column, ~plot_density_species_gradient(., body_mass_g)) |>
+        ggplot_image(height = px(50), aspect_ratio = 3)
+    }
+  ) |>
+  cols_align(
+    align = 'center',
+    columns = 'Distribution'
+  ) |>
+  tab_options(
+    table.font.names = 'Merriweather',
+    table.font.color = 'white',
+    heading.align = 'left',
+    table_body.hlines.width = px(1),
+    table_body.hlines.color =  'white',
+    table_body.border.top.color = 'white',
+    table_body.border.top.style = px(1),
+    heading.border.bottom.width = px(1),
+    heading.border.bottom.color =  'white',
+    column_labels.border.bottom.width = px(1),
+    column_labels.border.bottom.color =  'white',
+    column_labels.font.weight = 'bold',
+    table.border.top.style = 'none',
+    table_body.border.bottom.color = 'white'
+  ) |>
+  opt_css(
+    css = '
+    #weights-tbl .gt_table {
+      background: linear-gradient(-135deg, #c31432, #240b36);
+    }
+
+    #weights-tbl .gt_heading, #weights-tbl .gt_col_heading, #weights-tbl .gt_column_spanner_outer {
+      background:transparent;
+    }
+
+    #weights-tbl .gt_col_headings {
+      border-top-color: white;
+      border-top-width:1px;
+    }
+
+    '
+  )
+
+```
+
+Finally, we can fix our penguin table from before.
+This will require another little CSS trick.
+The problem that prevented us to from erasing the spanner's bottom border was this bug: The actual cell that we need to target is nested inside the cell that we targeted with `tab_style()`.
+Hence, our changes with `tab_style()` are not precise enough to change anything.
+Thus, the only way to circumvent the bug is to target the correct cell with CSS.
+Let's do that for our dummy example first.
+
+```{r}
+#| echo: false
+exibble |> 
+  select(1:4) |> 
+  gt(id = 'mini-table') |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num') |> 
+  tab_spanner(
+    columns = 1:2, 
+    label = 'A column spanner', 
+    id = 'spannerA'
+  ) |> 
+  tab_spanner(
+    columns = 3:4, 
+    label = 'Another column spanner', 
+    id = 'spannerB'
+  )  |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'spannerA'),
+    style = cell_fill(color = 'darkgreen')
+  ) |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'spannerB'),
+    style = cell_fill(color = 'darkgreen', alpha = 0.5)
+  ) |> 
+  tab_style(
+    locations = list(
+      cells_column_labels(),
+      cells_body(columns = c('char', 'date'), rows = c(3, 5, 8))
+    ),
+    style = list(
+      cell_fill(color = 'firebrick4'),
+      cell_text(color = 'white', size = 14, weight = 'bold'),
+      cell_borders(
+        sides = c('left', 'right'), 
+        color = 'green', 
+        weight = px(3)
+      )
+    )
+  ) 
+```
+
+If you study the HTML code of this table, you'll notice two things:
+
+1.  The cell that we need to target uses `<span>` tags.
+2.  This cell is nested inside `<th>` tags (th = table header).\
+    More prescisely, it uses `<th id="Another column spanner">`.
+
+Hence, we need to use CSS code to target `<span>` tags inside `<th>` tags with `id="Another column spanner"`.
+The code for that is `th[id='Another column spanner'] > span`.
+Add the table ID to this and we're can remove the border from one spanner.
+
+```{r}
+exibble |> 
+  select(1:4) |> 
+  gt(id = 'mini-table') |> 
+  opt_stylize(style = 3) |> 
+  fmt_number(columns = 'num') |> 
+  tab_spanner(
+    columns = 1:2, 
+    label = 'A column spanner', 
+    id = 'spannerA'
+  ) |> 
+  tab_spanner(
+    columns = 3:4, 
+    label = 'Another column spanner', 
+    id = 'spannerB'
+  )  |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'spannerA'),
+    style = cell_fill(color = 'darkgreen')
+  ) |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'spannerB'),
+    style = cell_fill(color = 'darkgreen', alpha = 0.5)
+  ) |> 
+  tab_style(
+    locations = list(
+      cells_column_labels(),
+      cells_body(columns = c('char', 'date'), rows = c(3, 5, 8))
+    ),
+    style = list(
+      cell_fill(color = 'firebrick4'),
+      cell_text(color = 'white', size = 14, weight = 'bold'),
+      cell_borders(
+        sides = c('left', 'right'), 
+        color = 'green', 
+        weight = px(3)
+      )
+    )
+  ) |> 
+  opt_css(
+    "#mini-table th[id='Another column spanner'] > span {
+        border-bottom-style: none;
+      }
+    "
+  )
+```
+
+Notice that the ID we had to use is just the label of the spanner and not the `id` we assigned in `tab_spanner()`.
+Once you've understood that, you can also fix our penguin table.
+Though, you have to watch out that the Chinstrap ID has `<strong>` tags in them (because the text is bold).
+
+```{r}
+#| echo: false
+
+
+make_tbl_quarto_robust <- function(tbl) {
+  # Get tbl html code (without the inline stuff)
+  tbl_html <- tbl |>
+    as_raw_html(inline_css = FALSE) 
+  
+  # Find table id
+  tbl_id <-  str_match(tbl_html, 'id="(.*)"\\s')[,2] 
+  
+  # Split html so that we only replace strings in the css part at first
+  # That's important for performance
+  split_html <- tbl_html |> 
+    str_split_1('<table class="gt_table".{0,}>')
+  css_part <- split_html[1] |> 
+    str_split_1('<style>')
+  
+  # Create regex to add table id
+  my_regex <- str_c('(', tbl_id, ' )?(.* \\{)')
+  replaced_css <- css_part[2] |>
+    # Make global html changes more specific
+    str_replace_all('html \\{', str_c(tbl_id, ' .gt_table {')) |> 
+    # Make changes to everything specific to the table id
+    str_replace_all(my_regex, str_c('\\#', tbl_id, ' \\2')) |> 
+    # Replace duplicate names 
+    str_replace_all(
+      str_c('\\#', tbl_id, ' \\#', tbl_id),
+      str_c('\\#', tbl_id)
+    )
+  
+  # Put split html back together
+  str_c(
+    css_part[1], '<style>', 
+    replaced_css, '<table class="gt_table">', 
+    split_html[2]
+  ) |> 
+    # Rename all gt_* classes to new_gt_*
+    str_replace_all('(\\.|class="| )gt', '\\1new_gt') |> 
+    # Reformat as html
+    html()
+}
+
+
+
+knit_print.gt <- function(x, ...) {
+  # Two steps to avoid most Quarto changes of my table styles: 
+  # 1. as_raw_html() to use table styles *inline*
+  # 2. wrap output in a div that resets all Quarto styles
+  stringr::str_c(
+    "<div style='all:initial';>\n", 
+    make_tbl_quarto_robust(x), 
+    "\n</div>"
+  ) |> 
+    knitr::asis_output()
+}
+registerS3method(
+  "knit_print", 'gt_tbl', knit_print.gt, 
+  envir = asNamespace("gt") 
+  # important to overwrite {gt}s knit_print
+)
+```
+
+```{r}
+#| code-fold: true
+
+penguin_counts_wider |> 
+  mutate(across(.cols = -(1:2), ~if_else(. == 0, NA_integer_, .))) |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(
+    groupname_col = 'island', 
+    rowname_col = 'year', 
+    id = 'fixed-penguins'
+  ) |> 
+  cols_label(.list = desired_colnames) |> 
+  tab_spanner(
+    label = md('**Adelie**'),
+    columns = 3:4
+  ) |> 
+  tab_spanner(
+    label = md('**Chinstrap**'),
+    columns = c('Chinstrap_female', 'Chinstrap_male'),
+    id = 'chinstrap'
+  ) |> 
+  tab_spanner(
+    label =  md('**Gentoo**'),
+    columns = contains('Gentoo')
+  ) |> 
+  tab_header(
+    title = 'Penguins in the Palmer Archipelago',
+    subtitle = 'Data is courtesy of the {palmerpenguins} R package'
+  ) |> 
+  sub_missing(missing_text = '-') |>
+  summary_rows(
+    groups = TRUE,
+    fns = list(
+      'Maximum' = ~max(.),
+      'Total' = ~sum(.) 
+    ),
+    formatter = fmt_number,
+    decimals = 0,
+    missing_text = '-'
+  )  |> 
+  tab_options(
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  opt_stylize(style = 6, color = 'gray') |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'chinstrap'),
+    style = cell_fill(color = 'dodgerblue')
+  ) |> 
+  opt_css(
+    "#fixed-penguins th[id='<strong>Chinstrap</strong>'] > span {
+        border-bottom-style: none;
+      }
+    "
+  )
+```
+
+## Summary
+
+Wow.
+We made it.
+This was quite a chapter.
+
+For me, this chapter was tricky to write because styling small details is hard.
+Especially if you're trying to explain what's going on along the way.
+I hope that you feel empowered to style your tables as you wish now.
+
+As for the HTML/CSS part: I know that this is particularly hard if you've never done this before.
+But it get's easier as you learn to navigate your way around the code with your browser.
+
+At this point, we've learned everything we need to know to create great tables with `{gt}`.
+So, let's do that.
+Next up, case studies.

@@ -35,10 +35,10 @@
     },
     "Matrix": {
       "Package": "Matrix",
-      "Version": "1.5-1",
+      "Version": "1.5-3",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "539dc0c0c05636812f1080f473d2c177",
+      "Hash": "4006dffe49958d2dd591c17e61e60591",
       "Requirements": [
         "lattice"
       ]
@@ -411,6 +411,18 @@
       "Hash": "6b6c0f8467cd4ce0b500cabbc1bd1763",
       "Requirements": []
     },
+    "exams": {
+      "Package": "exams",
+      "Version": "2.4-0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "d0aa0513ed578e10a8309493a3e5ee27",
+      "Requirements": [
+        "base64enc",
+        "knitr",
+        "rmarkdown"
+      ]
+    },
     "fansi": {
       "Package": "fansi",
       "Version": "1.0.3",
@@ -584,15 +596,10 @@
     },
     "gt": {
       "Package": "gt",
-      "Version": "0.7.0.9000",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "gt",
-      "RemoteUsername": "rstudio",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "a4e108c4b755e9ce0b4d3aca423e62b377bf39b1",
-      "Hash": "4544914c79a5cbb8f6a33c00701b35e2",
+      "Version": "0.8.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "d100be8d1f54dc589cc8d63366839287",
       "Requirements": [
         "base64enc",
         "bigD",
@@ -657,6 +664,16 @@
         "tibble",
         "tidyselect",
         "vctrs"
+      ]
+    },
+    "here": {
+      "Package": "here",
+      "Version": "1.0.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "24b224366f9c2e7534d2344d10d59211",
+      "Requirements": [
+        "rprojroot"
       ]
     },
     "highr": {
@@ -1160,6 +1177,14 @@
         "yaml"
       ]
     },
+    "rprojroot": {
+      "Package": "rprojroot",
+      "Version": "2.0.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "1de7ab598047a87bba48434ba35d497d",
+      "Requirements": []
+    },
     "rstudioapi": {
       "Package": "rstudioapi",
       "Version": "0.14",
@@ -1460,15 +1485,15 @@
     },
     "vctrs": {
       "Package": "vctrs",
-      "Version": "0.5.0.9000",
+      "Version": "0.5.1.9000",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "vctrs",
       "RemoteUsername": "r-lib",
       "RemoteRef": "HEAD",
-      "RemoteSha": "ece04d3b8d7d6974c8e0b15ab540969a741ce201",
-      "Hash": "d4c80dde72e66fb7bb5aece36abd51d6",
+      "RemoteSha": "48794fd3e486ed3bca7fc3842f625d01eb02ed6b",
+      "Hash": "0ee6c4fe1aba74d4b29bfe647fde21d3",
       "Requirements": [
         "cli",
         "glue",

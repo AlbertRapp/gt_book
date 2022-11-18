@@ -1,4 +1,380 @@
 # Quarto and {gt} {#sec-quarto}
 
+Quarto is great!
+It really is.
+It makes creating a variety of documents so much easier.
+For example, [my blog](https://albert-rapp.de/) runs on Quarto.
+So does this book.
 
-## Column widths
+I think one reason why Quarto works so smoothly is because it comes with so many useful default settings.
+That way, you can change aspects of your document's appearance but you don't have to.
+Unfortunately, as useful as these defaults are, they get a little bit annoying when using `{gt}` with Quarto.
+Take a look at how our penguin table from [@sec-getting-started] renders in Quarto.
+
+```{r}
+#| code-fold: true
+library(tidyverse)
+library(gt)
+penguins <- palmerpenguins::penguins |> filter(!is.na(sex))
+
+penguin_counts <- penguins |> 
+  mutate(year = as.character(year)) |> 
+  group_by(species, island, sex, year) |> 
+  summarise(n = n(), .groups = 'drop')
+
+penguin_counts_wider <- penguin_counts |> 
+  pivot_wider(
+    names_from = c(species, sex),
+    values_from = n
+  ) |> 
+  # Make missing numbers (NAs) into zero
+  mutate(across(.cols = -(1:2), .fns = ~replace_na(., replace = 0))) |> 
+  arrange(island, year) 
+
+actual_colnames <- colnames(penguin_counts_wider)
+desired_colnames <- actual_colnames |> 
+  str_remove('(Adelie|Gentoo|Chinstrap)_') |> 
+  str_to_title()
+names(desired_colnames) <- actual_colnames
+
+spanners_and_header <- function(gt_tbl) {
+  gt_tbl |> 
+    tab_spanner(
+      label = md('**Adelie**'),
+      columns = 3:4
+    ) |> 
+    tab_spanner(
+      label = md('**Chinstrap**'),
+      columns = c('Chinstrap_female', 'Chinstrap_male')
+    ) |> 
+    tab_spanner(
+      label =  md('**Gentoo**'),
+      columns = contains('Gentoo')
+    ) |> 
+    tab_header(
+      title = 'Penguins in the Palmer Archipelago',
+      subtitle = 'Data is courtesy of the {palmerpenguins} R package'
+    ) 
+}
+
+penguin_table <- penguin_counts_wider |> 
+  mutate(across(.cols = -(1:2), ~if_else(. == 0, NA_integer_, .))) |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(groupname_col = 'island', rowname_col = 'year') |> 
+  cols_label(.list = desired_colnames) |> 
+  spanners_and_header()  |> 
+  sub_missing(missing_text = '-') |>
+  summary_rows(
+    groups = TRUE,
+    fns = list(
+      'Maximum' = ~max(.),
+      'Total' = ~sum(.) 
+    ),
+    formatter = fmt_number,
+    decimals = 0,
+    missing_text = '-'
+  )  |> 
+  tab_options(
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  opt_stylize(style = 6, color = 'gray')
+```
+
+::: panel-tabset
+### Regular output (screenshot)
+
+```{r}
+#| echo: false
+penguin_table |> 
+  gt::gtsave('penguins_screenshot.png')
+
+knitr::include_graphics('penguins_screenshot.png')
+```
+
+### Quarto output
+
+```{r}
+#| echo: false
+penguin_table 
+```
+:::
+
+But there is a workaround, right?
+Otherwise, how did I manage to write this Quarto book.
+Yes, there is a way.
+Let me teach you the two secret ingredients to save your `{gt}` tables from Quarto.
+
+## Convert table to HTML {#sec-convert-table-to-html}
+
+As you have seen in [@sec-case-studies] you can transform any `{gt}` table to HTML code with `as_raw_html()`.
+Let's have a look how this compares to the regular output.
+
+::: panel-tabset
+### Quarto output
+
+```{r}
+penguin_table |> as_raw_html()
+```
+
+### Regular output
+
+::: {style="all:initial;"}
+```{r}
+penguin_table |> as_raw_html()
+```
+:::
+:::
+
+As you can see in the "Quarto Output" panel, `as_raw_html()` fixes most of the problems already.
+But notice that the regular table uses narrower line heights.
+So, `as_raw_html()` may not be enough.
+Behind the scenes, I applied the second secret ingredient to the "Regular output" panel.
+Let me tell you what I did.
+
+## Reset CSS styles.
+
+The CSS code to reset any styles is `style="all:initial;"`. T
+hus, you can wrap your code chunk into an HTML `div` with that style. 
+So, what I wrote in my Quarto document looked something like
+
+```` markdown
+::: {style="all:initial;"}
+    ```{.r}
+    penguin_table |> as_raw_html()
+    ```
+:::
+````
+
+In the actual document, I would use `{r}` instead of `{.r}`.
+Also, you don't need the indentation in front of the code chunk.
+This was just added here so that the code is displayed properly.
+
+## Apply style isolation to all `{gt}` outputs automatically
+
+Obviously, you do not want to write `as_raw_html()` all the time.
+And that's not what I did in this book.
+Thus, here's a third bonus ingredient for you.
+What you'll need to do is the following:
+
+-   Write a function `knit_print.gt(x, ...)` that
+
+    1.  transforms a `{gt}` table into HTML,
+    2.  wraps the HTML code into a `<div>` with reseted style and
+    3.  applies `knitr::asis_output()` which ensures proper HTML output.
+
+-   Overwrite the default `{gt}` output function with `registerS3method()`.
+
+```{r}
+#| echo: fenced
+library(knitr)
+knit_print.gt <- function(x, ...) {
+  stringr::str_c(
+    "<div style='all:initial';>\n", 
+    gt::as_raw_html(x), 
+    "\n</div>"
+  ) |> 
+    knitr::asis_output()
+    
+}
+registerS3method(
+  "knit_print", 'gt_tbl', knit_print.gt, 
+  envir = asNamespace("gt") 
+  # important to overwrite {gt}s knit_print
+)
+```
+
+Once this code chunk is run, you don't need to call `as_raw_html()` anymore.
+But if you do, then `style="all:initial;"` is **not** applied to the output.
+That's because our change only affects those outputs that are `{gt}` tables and not HTML code (that may correspond to a `{gt}` table).
+
+::: panel-tabset
+### `as_raw_html()`
+
+```{r}
+penguin_table |> as_raw_html()
+```
+
+### Regular output
+
+```{r}
+penguin_table
+```
+:::
+
+Also, there is one more advantage of overwriting `knit_print.gt()`.
+This way, only the style of the output is reseted.
+But if you wrap your whole code chunk into `::: {style="all:initial;}` the display of the code chunk is also affected.
+
+This is what happened earlier.
+In case you haven't notice, go back to [@sec-convert-table-to-html] and compare the code chunks of the panels.
+The second one uses a smaller font.
+
+## A fallback plan
+
+What happens if our strategy fails?
+Most of the time you can just add your own custom CSS code via `opt_css()`.
+This should overwrite Quarto's defaults most of the time.
+
+But there has been one case in this book where this did not work.
+Remember this table from the end of [@sec-styling]?
+
+```{r}
+#| code-fold: true
+
+penguins_styled_tabspanner <- penguin_counts_wider |> 
+  mutate(across(.cols = -(1:2), ~if_else(. == 0, NA_integer_, .))) |> 
+  mutate(
+    island = as.character(island), 
+    year = as.numeric(year),
+    island = paste0('Island: ', island)
+  ) |> 
+  gt(
+    groupname_col = 'island', 
+    rowname_col = 'year', 
+    id = 'fixed-penguins'
+  ) |> 
+  cols_label(.list = desired_colnames) |> 
+  tab_spanner(
+    label = md('**Adelie**'),
+    columns = 3:4
+  ) |> 
+  tab_spanner(
+    label = md('**Chinstrap**'),
+    columns = c('Chinstrap_female', 'Chinstrap_male'),
+    id = 'chinstrap'
+  ) |> 
+  tab_spanner(
+    label =  md('**Gentoo**'),
+    columns = contains('Gentoo')
+  ) |> 
+  tab_header(
+    title = 'Penguins in the Palmer Archipelago',
+    subtitle = 'Data is courtesy of the {palmerpenguins} R package'
+  ) |> 
+  sub_missing(missing_text = '-') |>
+  summary_rows(
+    groups = TRUE,
+    fns = list(
+      'Maximum' = ~max(.),
+      'Total' = ~sum(.) 
+    ),
+    formatter = fmt_number,
+    decimals = 0,
+    missing_text = '-'
+  )  |> 
+  tab_options(
+    data_row.padding = px(2),
+    summary_row.padding = px(3), # A bit more padding for summaries
+    row_group.padding = px(4)    # And even more for our groups
+  ) |> 
+  opt_stylize(style = 6, color = 'gray') |> 
+  tab_style(
+    locations = cells_column_spanners(spanners = 'chinstrap'),
+    style = cell_fill(color = 'dodgerblue')
+  ) |> 
+  opt_css(
+    "#fixed-penguins th[id='<strong>Chinstrap</strong>'] > span {
+        border-bottom-style: none;
+      }
+    "
+  )
+penguins_styled_tabspanner
+```
+
+Notice that there is a grey border in the blue cell.
+This border should not be there as we have already included the CSS code to fix that.
+I'm not sure what's going on there but here's a fix.
+
+I've written a (rudimentary) function `make_tbl_quarto_robust()` that
+
+-   converts a `{gt}` table to HTML,
+-   splits out the CSS part from that using text manipulation and
+-   replaces all `.gt_*` classes with some other name so that Quarto can't target it.
+
+```{r}
+#| code-fold: true
+make_tbl_quarto_robust <- function(tbl) {
+  # Get tbl html code (without the inline stuff)
+  tbl_html <- tbl |>
+    as_raw_html(inline_css = FALSE) 
+  
+  # Find table id
+  tbl_id <-  str_match(tbl_html, 'id="(.*)"\\s')[,2] 
+  
+  # Split html so that we only replace strings in the css part at first
+  # That's important for performance
+  split_html <- tbl_html |> 
+    str_split_1('<table class="gt_table".{0,}>')
+  css_part <- split_html[1] |> 
+    str_split_1('<style>')
+  
+  # Create regex to add table id
+  my_regex <- str_c('(', tbl_id, ' )?(.* \\{)')
+  replaced_css <- css_part[2] |>
+    # Make global html changes more specific
+    str_replace_all('html \\{', str_c(tbl_id, ' .gt_table {')) |> 
+    # Make changes to everything specific to the table id
+    str_replace_all(my_regex, str_c('\\#', tbl_id, ' \\2')) |> 
+    # Replace duplicate names 
+    str_replace_all(
+      str_c('\\#', tbl_id, ' \\#', tbl_id),
+      str_c('\\#', tbl_id)
+    )
+  
+  # Put split html back together
+  str_c(
+    css_part[1], '<style>', 
+    replaced_css, '<table class="gt_table">', 
+    split_html[2]
+  ) |> 
+    # Rename all gt_* classes to new_gt_*
+    str_replace_all('(\\.|class="| )gt', '\\1new_gt') |> 
+    # Reformat as html
+    html()
+}
+```
+
+With this function we could do the same trick as before.
+This will give us the output we desire.
+
+```{r}
+library(knitr)
+knit_print.gt <- function(x, ...) {
+  stringr::str_c(
+    "<div style='all:initial';>\n", 
+    make_tbl_quarto_robust(x), 
+    "\n</div>"
+  ) |> 
+    knitr::asis_output()
+    
+}
+registerS3method(
+  "knit_print", 'gt_tbl', knit_print.gt, 
+  envir = asNamespace("gt") 
+  # important to overwrite {gt}s knit_print
+)
+penguins_styled_tabspanner 
+```
+
+But I really do not recommend this approach generally.
+It is a brute-force solution to a slightly annoying problem that will likely be fixed in the future anyway.
+Also, compared to `as_raw_html()` my function will likely not work for nested tables.
+Thus, I use my own function only when `as_raw_html()` and `opt_css()` fail me (which is rare).
+
+## Summary
+
+Quarto and `{gt}` are great projects.
+But as it is right now, they do not always play well together.
+That's no problem, though.
+As we have seen in this chapter, we can force them to play nicely like we want them to.
+
+My guess is that less force will be necessary in the future.
+Both projects improve all the time.
+So, it is only a matter of time until this chapter becomes obsolete.
+Until then, I hope that you could find the solutions you were looking for in this chapter.

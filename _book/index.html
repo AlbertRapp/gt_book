@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Albert Rapp">
-<meta name="dcterms.date" content="2022-11-14">
+<meta name="dcterms.date" content="2022-11-18">
 
 <title>Creating beautiful tables in R with {gt}</title>
 <style>
@@ -96,6 +96,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
 <link href="./getting_started.html" rel="next">
+<script src="site_libs/cookie-consent/cookie-consent.js"></script>
+<link href="site_libs/cookie-consent/cookie-consent.css" rel="stylesheet">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -124,6 +126,31 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     "search-submit-button-title": "Submit"
   }
 }</script>
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-Y3M69TZVPJ"></script>
+
+<script type="text/plain" cookie-consent="tracking">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-Y3M69TZVPJ', { 'anonymize_ip': true});
+</script>
+
+<script type="text/javascript" charset="UTF-8">
+document.addEventListener('DOMContentLoaded', function () {
+cookieconsent.run({
+  "notice_banner_type":"simple",
+  "consent_type":"implied",
+  "palette":"light",
+  "language":"en",
+  "page_load_consent_levels":["strictly-necessary","functionality","tracking","targeting"],
+  "notice_banner_reject_button_hide":false,
+  "preferences_center_close_button_hide":false,
+  "website_name":""
+  });
+});
+</script> 
+  
 
 
 </head>
@@ -236,7 +263,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 14, 2022</p>
+      <p class="date">November 18, 2022</p>
     </div>
   </div>
   
@@ -248,28 +275,24 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <section id="introduction" class="level1 unnumbered">
 <h1 class="unnumbered">Introduction</h1>
-<p><strong>This is currently still work in progress. First drafts of Chapters 1-3 are finished. Feedback is welcome.</strong></p>
+<p><strong>This is currently still work in progress. First drafts of all Chapters are online. Feedback is welcome.</strong></p>
 <p>I used to think that tables are dull lists of numbers. But I was wrong. Tables can be beautiful &amp; engaging. And in this Quarto book, we’re going to learn how to create such tables with R. More precisely, we will learn how to use the <a href="https://gt.rstudio.com/index.html"><code>{gt}</code> package</a>.</p>
 <p><a href="getting_started.html"><span>Chapter&nbsp;1</span></a> is the starting point of our <code>{gt}</code> journey. It will cover both useful guidelines for any table and how to implement them with <code>{gt}</code>. You can think of this chapter as a quickstart guide.</p>
 <p>Afterwards, we’re learning how to add eye-catching elements like plots, icons and images to our table in <a href="fancy_stuff.html"><span>Chapter&nbsp;2</span></a>. Many of these elements are powered through the amazing <a href="https://jthomasmock.github.io/gtExtras/index.html"><code>{gtExtras}</code> package</a>. But you will also learn how to add any plot to your table. Regardless of whether it implemented in <code>{gtExtras}</code> or not.</p>
 <p>Next, we’ll talk about formatting the entries of your table in <a href="formatting.html"><span>Chapter&nbsp;3</span></a>. <code>{gt}</code> has two powerful sets of functions to get the job done, namely <code>fmt_*()</code> and <code>sub_*()</code>. These functions all work the same and are pretty easy to pick up. Hence, it’s easy to format the data in your table the way you want/need.</p>
 <p>In <a href="styling.html"><span>Chapter&nbsp;4</span></a>, we’re learning how to change the theme of our table. This will be a long chapter. After all, we can basically change anything about our table’s appearance.</p>
 <p>All of the knowledge that we’ve acquired in the previous chapters will culminate in <a href="case_studies.html"><span>Chapter&nbsp;5</span></a>. That’s where we will build two elaborate tables with <code>{gt}</code>.</p>
-<p>Finally, <a href="quarto_gt.html"><span>Chapter&nbsp;6</span></a> is a special chapter dedicating to the interactions between <a href="https://quarto.org/">Quarto</a> and <code>{gt}</code>. As of right now (Quarto <code>v1.2.267</code> &amp; <code>{gt}</code> <code>v0.7.0.9000 Github (rstudio/gt@a4e108c)</code>), Quarto’s default theme can interact with your <code>{gt}</code> table and change its theme. But there are ways to isolate Quarto from <code>{gt}</code>. This is what you’ll learn in this chapter.</p>
+<p>Finally, <a href="quarto_gt.html"><span>Chapter&nbsp;6</span></a> is a special chapter dedicating to the interactions between <a href="https://quarto.org/">Quarto</a> and <code>{gt}</code>. As of right now (Quarto <code>v1.2.267</code> &amp; <code>{gt}</code> <code>v0.8.0</code>), Quarto’s default theme can interact with your <code>{gt}</code> table and change its theme. But there are ways to isolate Quarto from <code>{gt}</code>. This is what you’ll learn in this chapter.</p>
 <section id="prerequisites" class="level2">
 <h2 class="anchored" data-anchor-id="prerequisites">Prerequisites</h2>
 <p>This Quarto book is meant for people with an intermediate knowledge of R, specifically the Tidyverse. I do not expect people to know HTML/CSS for the most parts.</p>
 <p>Throughout most of the book, we’ll only to do small changes with HTML/CSS and these bits will be explained. But there will be parts in <a href="styling.html"><span>Chapter&nbsp;4</span></a> and the subsequent chapters that will talk about changing CSS styles. Feel free to skip these parts if you’re uncomfortable with CSS.</p>
-<!-- ## Formatting -->
-<!-- - `function()` -->
-<!-- - `{package}` (inline) -->
-<!-- - \{package\} (header) -->
 </section>
 <section id="about-this-book" class="level2">
 <h2 class="anchored" data-anchor-id="about-this-book">About this book</h2>
-<p>This book is completely free and the code is open-source. If you find the things you learn here useful, I’d appreciate it if you sponsor my work via <a href="https://www.buymeacoffee.com/rappa753">Buy Me Coffee</a>. Or if you’re interested in working with me, I’m open to freelance work. You can book an appointment with me on <a href="https://calendly.com/r-a/30min">Calendly</a>.</p>
-<p>No pressure. You don’t have to. I just mention this because I’d like to finance my current life style that enables me to write such extensive tutorials.</p>
+<p>This book is completely free and the code is open-source. If you find the things you learn here useful, I’d appreciate it if you sponsor my work via <a href="https://www.buymeacoffee.com/rappa753">Buy Me Coffee</a>.</p>
 <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="rappa753" data-color="#06436e" data-emoji="☕" data-font="Lato" data-text="Support me" data-outline-color="#ffffff" data-font-color="#ffffff" data-coffee-color="#FFDD00" data-height="40px"></script>
+<p>Or if you’re interested in working with me, I’m open to freelance work. You can book an appointment with me on <a href="https://calendly.com/r-a/30min">Calendly</a>.</p>
 </section>
 <section id="session-info" class="level2">
 <h2 class="anchored" data-anchor-id="session-info">Session info</h2>
@@ -278,7 +301,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>sessioninfo<span class="sc">::</span><span class="fu">session_info</span>(<span class="st">"installed"</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="do">## ─ Session info ───────────────────────────────────────────────────────────────</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="do">##  setting  value</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="do">##  version  R version 4.2.2 (2022-10-31)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="do">##  version  R version 4.2.2 Patched (2022-11-10 r83330)</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="do">##  os       Ubuntu 20.04.5 LTS</span></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="do">##  system   x86_64, linux-gnu</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="do">##  ui       X11</span></span>
@@ -286,7 +309,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="do">##  collate  en_US.UTF-8</span></span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="do">##  ctype    en_US.UTF-8</span></span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="do">##  tz       Europe/Berlin</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="do">##  date     2022-11-14</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="do">##  date     2022-11-18</span></span>
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="do">##  pandoc   2.19.2 @ /usr/lib/rstudio/bin/quarto/bin/tools/ (via rmarkdown)</span></span>
 <span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="do">## ─ Packages ───────────────────────────────────────────────────────────────────</span></span>
@@ -353,7 +376,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a><span class="do">##  P glue             1.6.2      2022-02-24 [?] CRAN (R 4.1.2)</span></span>
 <span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a><span class="do">##    googledrive      2.0.0      2021-07-08 [1] CRAN (R 4.1.0)</span></span>
 <span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a><span class="do">##    googlesheets4    1.0.1      2022-08-13 [1] CRAN (R 4.2.1)</span></span>
-<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a><span class="do">##    gt               0.7.0.9000 2022-11-14 [1] Github (rstudio/gt@a4e108c)</span></span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a><span class="do">##    gt               0.8.0      2022-11-16 [1] CRAN (R 4.2.2)</span></span>
 <span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a><span class="do">##    gtable           0.3.1      2022-09-01 [1] CRAN (R 4.2.1)</span></span>
 <span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a><span class="do">##    gtExtras         0.4.3      2022-11-05 [1] CRAN (R 4.2.2)</span></span>
 <span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a><span class="do">##    gtsummary        1.6.2      2022-09-30 [1] CRAN (R 4.2.1)</span></span>
@@ -383,7 +406,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a><span class="do">##  P magrittr         2.0.3      2022-03-30 [?] CRAN (R 4.1.3)</span></span>
 <span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a><span class="do">##    markdown         1.3        2022-10-29 [1] CRAN (R 4.2.2)</span></span>
 <span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a><span class="do">##    MASS             7.3-58.1   2022-08-03 [2] CRAN (R 4.2.1)</span></span>
-<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a><span class="do">##    Matrix           1.5-1      2022-09-13 [2] CRAN (R 4.2.1)</span></span>
+<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a><span class="do">##    Matrix           1.5-3      2022-11-11 [2] CRAN (R 4.2.2)</span></span>
 <span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a><span class="do">##    memoise          2.0.1      2021-11-26 [1] CRAN (R 4.2.0)</span></span>
 <span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a><span class="do">##    mgcv             1.8-41     2022-10-21 [2] CRAN (R 4.2.1)</span></span>
 <span id="cb1-112"><a href="#cb1-112" aria-hidden="true" tabindex="-1"></a><span class="do">##    mime             0.12       2021-09-28 [1] CRAN (R 4.1.1)</span></span>
@@ -461,7 +484,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb1-184"><a href="#cb1-184" aria-hidden="true" tabindex="-1"></a><span class="do">##    utf8             1.2.2      2021-07-24 [1] CRAN (R 4.1.0)</span></span>
 <span id="cb1-185"><a href="#cb1-185" aria-hidden="true" tabindex="-1"></a><span class="do">##    uuid             1.1-0      2022-04-19 [1] CRAN (R 4.2.0)</span></span>
 <span id="cb1-186"><a href="#cb1-186" aria-hidden="true" tabindex="-1"></a><span class="do">##    V8               4.2.2      2022-11-03 [1] CRAN (R 4.2.2)</span></span>
-<span id="cb1-187"><a href="#cb1-187" aria-hidden="true" tabindex="-1"></a><span class="do">##  P vctrs            0.5.0.9000 2022-11-09 [?] Github (r-lib/vctrs@ece04d3)</span></span>
+<span id="cb1-187"><a href="#cb1-187" aria-hidden="true" tabindex="-1"></a><span class="do">##    vctrs            0.5.1.9000 2022-11-18 [1] Github (r-lib/vctrs@48794fd)</span></span>
 <span id="cb1-188"><a href="#cb1-188" aria-hidden="true" tabindex="-1"></a><span class="do">##    viridisLite      0.4.1      2022-08-22 [1] CRAN (R 4.2.1)</span></span>
 <span id="cb1-189"><a href="#cb1-189" aria-hidden="true" tabindex="-1"></a><span class="do">##    vroom            1.6.0      2022-09-30 [1] CRAN (R 4.2.1)</span></span>
 <span id="cb1-190"><a href="#cb1-190" aria-hidden="true" tabindex="-1"></a><span class="do">##    waldo            0.4.0      2022-03-16 [1] CRAN (R 4.2.1)</span></span>
@@ -680,6 +703,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   </div>
 </nav>
 </div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+      <div class="nav-footer-center"><div class="cookie-consent-footer"><a href="#" id="open_preferences_center">Cookie Preferences</a></div></div>
+  </div>
+</footer>
 
 
 

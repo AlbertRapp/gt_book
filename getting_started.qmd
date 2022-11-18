@@ -113,8 +113,6 @@ This works with piping.
 Armed with that knowledge, we could label the columns like we did in [@fig-terrible-tbl].
 
 ```{r}
-#| label: tbl-test
-#| tbl-cap: This is a test
 penguin_counts_wider |> 
   gt() |> 
   cols_label(
@@ -234,7 +232,10 @@ penguin_counts_wider |>
   ) 
 ```
 
-We will learn more on labels like captions and footnotes, let me refer you to [@sec-annotation].
+By the same trick we could also add a caption for a Quarto document (`tab_caption()`), a footnote (`tab_footnote()`) or another source note (`tab_sourcenote()`) here.
+In this case it's a bit much, though.
+So I won't add them.
+Just know that these functions exist in case you need them.
 For now, let us talk about our next guideline.
 
 Before we can do that, let me mention one small thing: Our spanners and headers will not change as we move along this tutorial.

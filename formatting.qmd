@@ -22,19 +22,19 @@ registerS3method(
 ```
 
 `{gt}` has two families of functions that handle a lot of the data formatting parts.
-And you have already seen representatives of these families, namely `fmt_number()` and `sub_zero()`.
-In this chapter we're going to discover some of their siblings.
+And you have already seen members of these families, namely `fmt_number()` and `sub_zero()`.
+In this chapter, we're going to discover some of their siblings.
 
 The functions in these families are structured the same.
 So, if you can work with one, then you can work with them all.
 That's why we're not going to cover them all with examples here.
-For a full list of these functions take a look at the [`gt` docs](https://gt.rstudio.com/reference/index.html). 
+For a full list of these functions take a look at the [`{gt}` docs](https://gt.rstudio.com/reference/index.html).
 
 ## fmt\_\* functions {#sec-fmt-functions}
 
 First, we need some example data to practice on.
 Thankfully, `{gt}` already comes with data sets that use many different data formats.
-Let me introduce you to `{gt}`'s example tibble, or short `exibble`.
+Let me introduce you to `{gt}`'s example tibble, or `exibble` for short.
 
 ```{r}
 #| message: false
@@ -45,22 +45,23 @@ exibble
 ```
 
 Let's put this into a `{gt}` table.
-We're going to use one of the pre-defined themes.
+We're going to use one of the pre-defined themes that come with `opt_stylize()`.
 
 ```{r}
 exibble |> 
+  select(-(row:group)) |> 
   gt() |> 
   opt_stylize(style = 3)
 ```
 
 Phew!
-This is table won't win any awards any time soon.
-Let's clean it up a bit by working us through the columns one by one.
+This is table won't win awards any time soon.
+Let's clean it up by working us through the columns one by one.
 
 ### Numbers
 
-Let's first get rid of the [scientific notation](https://en.wikipedia.org/wiki/Scientific_notation) in the `num` column.
-While we're at it, we're going to round to one decimal.
+First, we're getting rid of the [scientific notation](https://en.wikipedia.org/wiki/Scientific_notation) in the `num` column.
+While we're at it, we're going to round the numbers to one decimal.
 
 ```{r}
 exibble |> 
@@ -72,7 +73,6 @@ exibble |>
     decimals = 1
   )
 ```
-
 
 Next, we may want to adjust our marks `,` and `.` in the output.
 For example, in German we write one million as `1.000.000` and a quarter as `0,25`.
@@ -91,8 +91,8 @@ exibble |>
   )
 ```
 
-Since we also have some very large numbers in the `num` column, we could apply some suffixing.
-This means that we transform e.g. 1000 to 1k.
+Since we also have some very large numbers in the `num` column, we could add suffixes instead of displaying a lot of zeroes.
+This means that we transform e.g. 1000 to 1K.
 
 ```{r}
 exibble |> 
@@ -126,7 +126,8 @@ exibble |>
 ### Currency
 
 Now, let's format the `currency` column.
-The default `currency` is `USD` so that will give you \$.
+The default `currency` is `USD`.
+That will give you \$ signs.
 
 ```{r}
 exibble |> 
@@ -137,9 +138,8 @@ exibble |>
   fmt_currency(columns = 'currency')
 ```
 
-
 Since I mostly use Euros in my real life, let me change the `currency` argument here.
-And we're going to set the locale to German again.
+Also, we're going to set `locale` to German again.
 
 ```{r}
 exibble |> 
@@ -158,12 +158,11 @@ Unfortunately, the locale did not catch that we use the Euro symbol at the end o
 But no worries, we can fix that manually.
 
 Instead of `fmt_currency()`, we're going to use `fmt_number()` and apply the Euro symbol manually via `pattern`.
-The `fmt_*()` functions use `{x}` as placeholder for the functions regular output.
-So that way we could create outputs as we see fit.
+The `fmt_*()` functions use `{x}` as placeholder for the function's regular output.
+That way, we can modify outputs as we see fit.
 Here are two examples.
 
 ::: panel-tabset
-
 #### Euro symbol (trailing)
 
 ```{r}
@@ -195,19 +194,14 @@ exibble |>
     pattern = 'EUR {x}'
   )
 ```
-
-
 :::
-
-
 
 We have rounded the `num` column to one decimal with the first `fmt_number()` layer.
 It's interesting to find out what happens if we had targeted the `currency` column in that layer too.
-Would the next `fmt_layer()` round the previously rounded number or the original number?
+Would the next `fmt_number()` layer round the previously rounded number or the original number?
 Let's check.
 
 ::: panel-tabset
-
 #### Round both columns in first layer
 
 ```{r}
@@ -241,18 +235,14 @@ exibble |>
     pattern = '{x}€'
   )
 ```
-
-
 :::
 
 As you can see, the output is the same.
 This means that the `fmt_*()` functions always use the original data.
 That's good to know.
 
-Fun fact: 
-That's also what's happening when you rename a column with `cols_label()`.
-Internally, the column names always rename the same.
-
+Fun fact: That's also what's happening when you rename a column with `cols_label()`.
+Internally, the column names always remain the same.
 
 ### Dates, times and datetimes
 
@@ -261,7 +251,6 @@ And there are quite a few `date_style`s we can choose from.
 Here, are a few examples.
 
 ::: panel-tabset
-
 #### wday_month_day_year
 
 ```{r}
@@ -271,12 +260,15 @@ exibble |>
   opt_stylize(style = 3) |> 
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_number(
-    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+    columns = 'currency', 
+    decimals = 2, 
+    locale = 'de', 
+    pattern = '{x}€'
   ) |> 
   fmt_date(columns = 'date', date_style = "wday_month_day_year")
 ```
 
-#### day_m_year
+#### day_m\_year
 
 ```{r}
 exibble |> 
@@ -285,11 +277,13 @@ exibble |>
   opt_stylize(style = 3) |> 
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_number(
-    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+    columns = 'currency', 
+    decimals = 2, 
+    locale = 'de', 
+    pattern = '{x}€'
   ) |> 
   fmt_date(columns = 'date', date_style = "day_m_year")
 ```
-
 
 #### yMMMd
 
@@ -300,11 +294,13 @@ exibble |>
   opt_stylize(style = 3) |> 
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_number(
-    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+    columns = 'currency', 
+    decimals = 2, 
+    locale = 'de', 
+    pattern = '{x}€'
   ) |> 
   fmt_date(columns = 'date', date_style = "yMMMd")
 ```
-
 
 #### yMMMEd
 
@@ -315,14 +311,16 @@ exibble |>
   opt_stylize(style = 3) |> 
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_number(
-    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+    columns = 'currency', 
+    decimals = 2, 
+    locale = 'de', 
+    pattern = '{x}€'
   ) |> 
   fmt_date(columns = 'date', date_style = "yMMMEd")
 ```
-
 :::
 
-To see the full list, you can run `info_date_style()`.
+To see the full list of available styles, you can run `info_date_style()`.
 
 ```{r}
 info_date_style()
@@ -331,12 +329,13 @@ info_date_style()
 Notice that some of these styles are labeled as flexible.
 This means that they will adjust to locales.
 Beware that month names may adapt to the locale but not the formatting.
+
+Here's an example of that with `day_m_year` (not flexible) and `yMMMd` (flexible) using the German locale.
 Notice how `day_m_year` does not set a `.` after the day but `yMMMd` does.
 The latter is the correct German formatting.
 
 ::: panel-tabset
-
-#### day_m_year
+#### day_m\_year
 
 ```{r}
 #| code-fold: true
@@ -346,7 +345,10 @@ exibble |>
   opt_stylize(style = 3) |> 
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_number(
-    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+    columns = 'currency', 
+    decimals = 2, 
+    locale = 'de',
+    pattern = '{x}€'
   ) |> 
   fmt_date(
     columns = 'date', 
@@ -365,7 +367,10 @@ exibble |>
   opt_stylize(style = 3) |> 
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_number(
-    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+    columns = 'currency', 
+    decimals = 2, 
+    locale = 'de',
+    pattern = '{x}€'
   ) |> 
   fmt_date(
     columns = 'date', 
@@ -373,15 +378,14 @@ exibble |>
     date_style = "yMMMd"
   )
 ```
-
 :::
 
-Formatting time works basically the same, so I'm just going to show one example.^[
-You should probably know that there seems to be an issue with some of the time formats. 
-At least I've run into some troubles (see [Issue](https://github.com/rstudio/gt/issues/1124)).
-But if your desired format does not work, you can always format it manually. 
-Either before sending the data to `gt()` or with `fmt()` which we'll cover in a sec.
-]
+Formatting time works basically the same, so I'm just going to show one example.[^formatting-1]
+
+[^formatting-1]: You should probably know that there seems to be an issue with some of the time formats when you're also using `{renv}`.
+    At least I've run into some troubles with that (see [Issue](https://github.com/rstudio/gt/issues/1124)).
+    But if your desired format does not work, you can always format it manually.
+    Either before sending the data to `gt()` or with `fmt()` which we'll cover in a sec.
 
 ```{r}
 exibble |> 
@@ -390,21 +394,24 @@ exibble |>
   opt_stylize(style = 3) |> 
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_number(
-    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+    columns = 'currency', 
+    decimals = 2, 
+    locale = 'de',
+    pattern = '{x}€'
   ) |> 
   fmt_date(columns = 'date', locale = 'de', date_style = "yMMMd") |> 
   fmt_time(columns = 'time', time_style = "Hms")
 ```
 
-
-I have a date. 
+I have a date.
 I have a time.
 Uh!
-Datetime, cf. [PPAP](https://www.youtube.com/watch?v=Ct6BUPvE2sM)^[
-My brain randomly reminded me of some dumb internet stuff from 6 years ago.
-So naturally I had to incorporate it into my text somehow.
-And of course the YouTube algorithm had to remind me of more [nonsense](https://www.youtube.com/watch?v=jofNR_WkoCE).
-].
+Datetime, cf.
+[PPAP](https://www.youtube.com/watch?v=Ct6BUPvE2sM)[^formatting-2].
+
+[^formatting-2]: My brain randomly reminded me of some dumb internet stuff from 6 years ago.
+    So naturally I had to incorporate it into my text somehow.
+    And of course the YouTube algorithm had to remind me of more [fun stuff](https://www.youtube.com/watch?v=jofNR_WkoCE).
 
 Working with these magical columns is exactly what you'd expect.
 You use `fmt_datetime()` which has a `date_style` and a `time_style` argument.
@@ -416,16 +423,23 @@ exibble |>
   opt_stylize(style = 3) |> 
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_number(
-    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+    columns = 'currency', 
+    decimals = 2, 
+    locale = 'de',
+    pattern = '{x}€'
   ) |> 
   fmt_date(columns = 'date', locale = 'de', date_style = "yMMMd") |> 
   fmt_time(columns = 'time', time_style = "Hms") |> 
-  fmt_datetime(columns = 'datetime', date_style = "yMMMd", time_style = "Hms")
+  fmt_datetime(
+    columns = 'datetime', 
+    date_style = "yMMMd", 
+    time_style = "Hms"
+  )
 ```
 
 ### Markdown
 
-We can also use Markdown and therefore also HTML + CSS in our tables.
+We can also use Markdown and therefore HTML + CSS in our tables.
 Let's use that to make our table a bit colorful.
 For example, we could wrap elements from the `currency` column into `<span>`-tags to colorize them.
 
@@ -444,16 +458,21 @@ exibble |>
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_date(columns = 'date', locale = 'de', date_style = "yMMMd") |> 
   fmt_time(columns = 'time', time_style = "Hms") |> 
-  fmt_datetime(columns = 'datetime', date_style = "yMMMd", time_style = "Hms") |> 
+  fmt_datetime(
+    columns = 'datetime', 
+    date_style = "yMMMd", 
+    time_style = "Hms"
+  ) |> 
   fmt_markdown(columns = 'currency')
 ```
 
 This is one way you could style your table.
-But I've used this way only for simple demo purposes.
+But I've used this way only for demo purposes.
 We'll learn more about styling in [@sec-styling].
 
-The real power of the `fmt_markdown()` function is that you can put any html into the table and it will be formatted correctly afterwards.
+The real power of the `fmt_markdown()` layer is that you can put any html into the table and it will be formatted correctly afterwards.
 For example, I've copied the [svg](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics)-code (which can be used in HTML) for the R logo from [Wikipedia](https://commons.wikimedia.org/wiki/File:R_logo.svg).
+Putting this code a `{gt}` table and using `fmt_markdown()`, let's me use the R logo.
 
 ```{r}
 ## factor to apply to original width and height of svg from Wikipedia
@@ -483,14 +502,13 @@ tibble(logo = r_logo_svg) |>
 
 This `fmt_markdown()` technique is super powerful.
 We could even use it to nest `{gt}`-tables (which are HTML) inside of each other.
-That's what we'll do in [@case-studies] to create elaborate tables.
-
+That's what we'll do in [@sec-case-studies] to create elaborate tables.
 
 ### Any data format
 
 There are some more `fmt_*()` functions for specific formats.
 Once again, you can look at them in the [docs](s://gt.rstudio.com/reference/index.html).
-Instead of showing them all, let me finish of with the most powerful function of them all.
+Instead of showing them all, let me finish off this section with the most powerful function of them all.
 That's `fmt()`.
 
 You can just apply any function that you like for formatting.
@@ -503,11 +521,18 @@ exibble |>
   opt_stylize(style = 3) |> 
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_number(
-    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+    columns = 'currency', 
+    decimals = 2, 
+    locale = 'de',
+    pattern = '{x}€'
   ) |> 
   fmt_date(columns = 'date', locale = 'de', date_style = "yMMMd") |> 
   fmt_time(columns = 'time', time_style = "Hms") |> 
-  fmt_datetime(columns = 'datetime', date_style = "yMMMd", time_style = "Hms") |> 
+  fmt_datetime(
+    columns = 'datetime', 
+    date_style = "yMMMd", 
+    time_style = "Hms"
+  ) |> 
   fmt(columns = 'char', fn = str_to_upper)
 ```
 
@@ -531,25 +556,22 @@ exibble |>
   )
 ```
 
-
 ## sub\_ functions {#sec-sub-functions}
 
 The `sub_*()` functions are straightforward to use.
-There are three main functions that you can use.
+There are five functions that you can use.
 
-- `sub_missing()` replaces `NA` values
-- `sub_zero()` replaces zero values
-- `sub_large_values()` replaces large values (according to some threshold)
-- `sub_small_values()` does... I think you can guess it
-- `sub_values()` can replace large numbers or texts that match a [regex](https://r4ds.hadley.nz/regexps.html)
-
+-   `sub_missing()` replaces `NA` values
+-   `sub_zero()` replaces zeroes
+-   `sub_large_values()` replaces large values (according to some threshold)
+-   `sub_small_values()` does... I think you can guess it
+-   `sub_values()` can replace large numbers or texts that match a [regex](https://r4ds.hadley.nz/regexps.html)
 
 The first two are straight-forward to use.
 By default, they apply to the whole data.
 But you can also target only specific columns and rows by changing the `columns` and `rows` argument.
 
 ::: panel-tabset
-
 ### Replace `NA`
 
 ```{r}
@@ -559,14 +581,20 @@ exibble |>
   opt_stylize(style = 3) |> 
   fmt_number(columns = 'num', decimals = 1) |>
   fmt_number(
-    columns = 'currency', decimals = 2, locale = 'de',pattern = '{x}€'
+    columns = 'currency', 
+    decimals = 2, 
+    locale = 'de',
+    pattern = '{x}€'
   ) |> 
   fmt_date(columns = 'date', locale = 'de', date_style = "yMMMd") |> 
   fmt_time(columns = 'time', time_style = "Hms") |> 
-  fmt_datetime(columns = 'datetime', date_style = "yMMMd", time_style = "Hms") |> 
+  fmt_datetime(
+    columns = 'datetime', 
+    date_style = "yMMMd", 
+    time_style = "Hms"
+  ) |> 
   sub_missing(missing_text = '----------')
 ```
-
 
 ### Replace zeros
 
@@ -576,16 +604,13 @@ tibble(demo_column = -3:3) |>
   opt_stylize(style = 3) |> 
   sub_zero(zero_text = 'ZERO, WATCH OUT WHOOP WHOOP')
 ```
-
-
 :::
 
 With `sub_small_vals()` and `sub_large_vals()` you have to be a bit careful about the sign of the number you're replacing.
 Both functions will replace only positive or negative numbers.
-So, if you want to replace positive and negative numbers, you have to use the layers multiple times.
+So, if you want to replace positive **and** negative numbers, you have to use the layers multiple times.
 
 ::: panel-tabset
-
 ### Replace positives
 
 ```{r}
@@ -593,10 +618,13 @@ tibble(x = c(-100, 100, 0.01, -0.01), demo_col = x) |>
   gt() |> 
   opt_stylize(style = 3) |> 
   fmt_number(columns = where(is.numeric)) |> 
-  sub_small_vals(columns = 'demo_col', threshold = 1, sign = '+') |> 
-  sub_large_vals(columns = 'demo_col', threshold = 50, sign = '+')
+  sub_small_vals(
+    columns = 'demo_col', threshold = 1, sign = '+'
+  ) |> 
+  sub_large_vals(
+    columns = 'demo_col', threshold = 50, sign = '+'
+  )
 ```
-
 
 ### Replace negatives
 
@@ -605,10 +633,13 @@ tibble(x = c(-100, 100, 0.01, -0.01), demo_col = x) |>
   gt() |> 
   opt_stylize(style = 3) |> 
   fmt_number(columns = where(is.numeric)) |> 
-  sub_small_vals(columns = 'demo_col', threshold = 1, sign = '-') |> 
-  sub_large_vals(columns = 'demo_col', threshold = 50, sign = '-')
+  sub_small_vals(
+    columns = 'demo_col', threshold = 1, sign = '-'
+  ) |> 
+  sub_large_vals(
+    columns = 'demo_col', threshold = 50, sign = '-'
+  )
 ```
-
 
 ### Replace both
 
@@ -617,17 +648,24 @@ tibble(x = c(-100, 100, 0.01, -0.01), demo_col = x) |>
   gt() |> 
   opt_stylize(style = 3) |> 
   fmt_number(columns = where(is.numeric)) |> 
-  sub_small_vals(columns = 'demo_col', threshold = 1, sign = '+') |> 
-  sub_large_vals(columns = 'demo_col', threshold = 50, sign = '+') |> 
-  sub_small_vals(columns = 'demo_col', threshold = 1, sign = '-') |> 
-  sub_large_vals(columns = 'demo_col', threshold = 50, sign = '-')
+  sub_small_vals(
+    columns = 'demo_col', threshold = 1, sign = '+'
+  ) |> 
+  sub_large_vals(
+    columns = 'demo_col', threshold = 50, sign = '+'
+  ) |> 
+  sub_small_vals(
+    columns = 'demo_col', threshold = 1, sign = '-'
+  ) |> 
+  sub_large_vals(
+    columns = 'demo_col', threshold = 50, sign = '-'
+  )
 ```
-
 :::
 
 The last `sub_*()` function is `sub_values()`.
 It is the most powerful function of the `sub_*()` family because it can replace numbers and texts.
-For that it has a `values` and `pattern` argument.
+To do that it has a `values` and `pattern` argument.
 In case you're wondering, you can only use one of them at a time.
 If you specify both, `pattern` will always take precedence.
 
@@ -638,8 +676,7 @@ In order for this to work, this function must take a column and return a `TRUE`/
 
 Let's take a look at a couple of examples.
 
-::: tabset-panel
-
+::: panel-tabset
 ### Replace by values
 
 ```{r}
@@ -671,7 +708,6 @@ exibble |>
   )
 ```
 
-
 ### Replace by function
 
 ```{r}
@@ -687,12 +723,11 @@ exibble |>
     replacement = 'Between 10 and 10000'
   )
 ```
-
 :::
 
 ## Summary
 
-That's a wrap on this chapter.
+That's a wrap on [@sec-formatting].
 We've got the formatting options covered.
 Time to get to the most complicated part of our tables: Their theme.
 

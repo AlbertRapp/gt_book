@@ -32,7 +32,11 @@ library(gt)
 gapminder_data <- gapminder::gapminder |> 
   janitor::clean_names() |> 
   select(continent, country, year, life_exp) |> 
-  mutate(year = as.character(year)) # Year is really categorical with numeric labels
+  mutate(
+    year = as.character(year),
+    # Year is really categorical with numeric labels
+    country = as.character(country) 
+  ) 
 gapminder_data
 ```
 
@@ -102,7 +106,10 @@ We can figure this out by comparing the numbers in the most recent column one-by
 
 But that takes quite a lot of effort.
 Instead, let us make that easier to see by transforming that column into a heat map.
-To do so, just pass our table to `gt_color_rows()`.
+To do so, just pass our table to `gt_color_rows()`^[
+You can also get similar results with the `gt::data_color()` function. 
+Currently, I prefer the `gtExtras::gt_color_rows()` function because it allows me to set `domain`.
+].
 What you'll need to specify, is
 
 -   the targeted columns
@@ -405,7 +412,7 @@ And to make the new label use colors, we will have to write a label with HTML.
 Here's what you need to know for that:
 
 -   `<br>` is a line break in HTML
--   `<span style="color:red;font-size:24pt;">some text</span>` would result in [ some text ]{style="color:red;font-size:24pt;"}.
+-   `<span style="color:red;font-size:24pt;">some text</span>` would result in [some text]{style="color:red;font-size:24pt;"}.
 
 So, just create a `character` variable in R that uses this Syntax and let `gt()` know that you mean ~~business~~ HTML.
 The latter can be done with `html()`.
@@ -470,7 +477,7 @@ brands <- tibble(
 brands
 
 brands |>
-  gt(id = 'my_tbl') |>
+  gt() |>
   tab_header(
     title = 'Brand table',
     subtitle = 'Icons are taken from the {fontawesome} package'
@@ -816,9 +823,9 @@ penguins_new |>
 Our beautiful list of arguments for `plot_density_species_with_mean()` is saved as a text.
 This means that this extra function `fn` that we're going to pass to `text_transform()` needs to do a couple of things.
 
-1. Split the texts into separate arguments with `str_split_1()` (better output than `str_split()`)
-2. Pass the lists of arguments to `plot_density_species_with_mean()` and make sure that the arguments are placed correctly.
-3. Convert ggplot objects to images with `ggplot_image()`.
+1.  Split the texts into separate arguments with `str_split_1()` (better output than `str_split()`)
+2.  Pass the lists of arguments to `plot_density_species_with_mean()` and make sure that the arguments are placed correctly.
+3.  Convert ggplot objects to images with `ggplot_image()`.
 
 And task 1 and 2 need to be wrapped in `map()` because they don't work on whole columns.
 
@@ -834,9 +841,6 @@ penguins_new |>
     }
   ) 
 ```
-
-
-
 
 ## Summary
 
