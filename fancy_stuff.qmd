@@ -106,15 +106,15 @@ We can figure this out by comparing the numbers in the most recent column one-by
 
 But that takes quite a lot of effort.
 Instead, let us make that easier to see by transforming that column into a heat map.
-To do so, just pass our table to `gt_color_rows()`^[
-You can also get similar results with the `gt::data_color()` function. 
-Currently, I prefer the `gtExtras::gt_color_rows()` function because it allows me to set `domain`.
-].
+To do so, just pass our table to `gt_color_rows()`[^fancy_stuff-1].
 What you'll need to specify, is
+
+[^fancy_stuff-1]:  You can also get similar results with the `gt::data_color()` function.
+    Currently, I prefer the `gtExtras::gt_color_rows()` function because it allows me to set `domain`.
 
 -   the targeted columns
 -   the range of the values that are supposed to be colored
--   two colors that are used as linear gradient
+-   two colors that are used in a linear gradient
 
 ```{r}
 # Two colors from the Okabe Ito color palette
@@ -257,8 +257,6 @@ This will list all values of the `Timeline` column in the `{gt}` table.
 Have a look.
 
 ```{r}
-#| collapse: true
-
 selected_countries |> 
   left_join(life_exps_timeline, by = 'country') |> 
   gt(groupname_col = 'continent') |> 
@@ -289,9 +287,18 @@ The pattern to add fancy plots/images/fancy stuff is always the same, so let's r
 -   Step 1: Get the necessary data for the image into the `tibble` before even calling `gt()`. This will give you additional columns.
 -   Step 2: Target the additional columns with a new layer.
 
+For completeness' sake let me mention that we could also use the `rowwise()` and `c_across()` functions in step 1.^[Thank you, [Brani](https://fosstodon.org/@gd047), for pointing this out to me.]
+
+```{r}
+selected_countries |> 
+  rowwise() |> 
+  mutate(Timeline = list(c_across(year1957:year2007))) |> 
+  ungroup()
+```
+
 ## Add bullet charts
 
-As we know, the `gapminder` data set is much is larger than what we show here.
+As we know, the `gapminder` data set is much larger than what we show here.
 In fact, we have the same data for many more countries.
 But showing all of that information would make the table HUUUGE.
 
@@ -495,9 +502,9 @@ The easiest way to add images to your table is to rely on `gt_img_rows()` from `
 Just add a column with file paths/URLs of images to your tibble.
 Then, target that column with `gt_img_rows()` and your work is done.
 
-For example, you could use this to get images of the last four British prime ministers from Wikipedia and use them in a table.[^fancy_stuff-1]
+For example, you could use this to get images of the last four British prime ministers from Wikipedia and use them in a table.[^fancy_stuff-2]
 
-[^fancy_stuff-1]: This is the current list (November 12, 2022).
+[^fancy_stuff-2]: This is the current list (November 12, 2022).
     The British change PMs quite often recently.
 
 ```{r}
@@ -543,7 +550,7 @@ There are some other cool visual elements that can be added with help from `{gtE
 You should definitely check out [its documentation](https://jthomasmock.github.io/gtExtras/reference/index.html) to see the full list.
 
 For my final trick of this chapter, I'm going to show you how you can add any ggplot to your table.
-For example, we could look at our penguins from last chapter again.
+For example, we could look at our penguins from the last chapter again.
 Here's a table about their weight and its distribution (visualized with a violin plot.)
 
 ```{r penguin-violin}
@@ -711,7 +718,7 @@ penguin_weights |>
 Next, use the `text_transform()` layer to turn the species names into ggplot images.
 This layer can actually target not just the data rows but everything including column labels or the table header.
 
-So, we have to make sure that we attempt to turn only the data table cells into an image and not, say, the tab spanner.
+So, we have to make sure that we attempt to turn only the data table cells into an image and not, say, the spanner.
 This is done with the helper function `cells_body()` (more on this function in [@sec-theming]).
 Here's how that will look.
 

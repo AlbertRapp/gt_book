@@ -24,21 +24,22 @@ registerS3method(
 In this chapter, we're going to do two things:
 
 1.  Learn simple guidelines for better tables
-2.  Implement them with {gt}
+2.  Implement them with `{gt}`
 
-Of course we will need data for that.
+And of course we will need data for that.
 I like penguins, so we're going to use the fabulous `penguins` data set from `{palmerpenguins}`.
 
 ```{r}
 #| message: false
 #| warning: false
 library(tidyverse)
-penguins <- palmerpenguins::penguins |> filter(!is.na(sex))
+penguins <- palmerpenguins::penguins |> 
+  filter(!is.na(sex))
 penguins
 ```
 
-From that data let us compute a couple of simple counts.
-To get started, this is probably an easy data set to put into a table.
+Using this data, let us count the penguins.
+These counts will serve as a simple data set to practice table building.
 
 ```{r}
 penguin_counts <- penguins |> 
@@ -48,7 +49,7 @@ penguin_counts <- penguins |>
 penguin_counts
 ```
 
-In actual table, the data would probably be rearranged a bit.
+In an actual table, the data would probably be rearranged a bit.
 There's nothing wrong with this long (i.e. many rows) data format.
 In fact, this format is great for data analysis.
 But in a table that is meant to be read by humans, not machines, you'll probably go with a wider format.
@@ -68,7 +69,7 @@ penguin_counts_wider
 Now, let's put this into a table.
 Not too long ago I would have probably visualized the data with a table like this:
 
-![A not so sexy table of our `penguins_counts_wider` data set created by yours truly with LibreOffice Calc (spreadsheet software - double ugh. Though, compared to Excel it's open-source. So maybe 1.5 ugh?)](img/stupid_table_screenshot.png){#fig-terrible-tbl fig-align="center" width="90%"}
+![Ugh. A not so sexy table of our `penguins_counts_wider` data set created by yours truly with LibreOffice Calc (spreadsheet software - double ugh. Though, compared to Excel it's open-source. So maybe 1.5 ugh?)](img/stupid_table_screenshot.png){#fig-terrible-tbl fig-align="center" width="90%"}
 
 Ugh.
 This is not a sexy table.
@@ -91,7 +92,7 @@ Without vertical lines, the table will look less cramped.
 
 Thankfully, `{gt}` seems to live by this rule as it is implemented by default.
 Thus, we only need to pass our data set `penguin_counts_wider` to `gt()`.
-You can think of this function as the `ggplot()` analogue.
+You can think of this function as the `ggplot()` analogue:
 It's the starting point of any table in the `{gt}` universe.
 
 ```{r}
@@ -106,7 +107,7 @@ Of course, the column labels could be better which brings us to our next point.
 
 ## Use better column names
 
-To change the column names use the `cols_layer()` "layer".
+To change the column names use the  "layer" called `cols_layer()`.
 Much like `{ggplot2}`, `{gt}` works with layers.
 To change anything about the table, we just pass the table from layer to the next.
 This works with piping.
@@ -130,7 +131,7 @@ penguin_counts_wider |>
 But this isn't a great way to label the columns.
 So let's do something else instead.
 First, let us create so-called **spanners**.
-This joins columns and can be done with `tab_spanner()` layers.
+These are joined columns and can be created with `tab_spanner()` layers.
 You'll need one layer for each spanner.
 
 ```{r}
@@ -169,12 +170,12 @@ For the `columns` argument I have shown you three ways to get the job done:
 
 For the `label` argument you can either just state a `character` vector or you can wrap one in `md()` to enable Markdown syntax (like `**bold text**`).
 
-Okay now we don't really need the Species labels in the actual column names anymore.
+Okay, now we don't really need the Species labels in the actual column names anymore.
 The spanners already state that for us.
 So, let us modify our previous code to rename the columns.
 To do so, let me show you a cool trick that may save you some tedious typing.
 
-First, we create a named vector that contains the actual and the desired column names.
+First, we create a **named** vector that contains the actual and the desired column names.
 
 ```{r}
 actual_colnames <- colnames(penguin_counts_wider)
@@ -207,7 +208,7 @@ penguin_counts_wider |>
   )
 ```
 
-Finally, while we're currently changing labels, let us add an important label - the title.
+Finally, while we're currently changing labels, let us add one important label - the title.
 The `tab_header()` layer does the trick.
 
 ```{r}
@@ -232,7 +233,7 @@ penguin_counts_wider |>
   ) 
 ```
 
-By the same trick we could also add a caption for a Quarto document (`tab_caption()`), a footnote (`tab_footnote()`) or another source note (`tab_sourcenote()`) here.
+By the same trick we could also add a caption for a Quarto document (`tab_caption()`), a footnote (`tab_footnote()`) or another source note (`tab_sourcenote()`),
 In this case it's a bit much, though.
 So I won't add them.
 Just know that these functions exist in case you need them.
@@ -320,7 +321,7 @@ read_csv2('data/ratios.csv') |>
 
 For numbers it's the other way around.
 That's because right-aligned numbers make it easy to see how many digits a number has compared to other numbers.
-This assumes that your numbers use a font that assign equal width to all digits (monospace fonts).
+This assumes that your numbers use a font that assigns equal width to all digits (monospace fonts).
 
 So, let us align the `island` and `year` column.
 We can either do this by transforming the data types before even calling `gt()`.
@@ -363,7 +364,7 @@ In cases like these, I'd rather remove the column.
 Instead, I would group the table using additional rows.
 I like to think that this comes with better readability.
 
-With `{gt}` this grouping is easy.
+With `{gt}`, this grouping is easy.
 We only need to specify the `groupname_col` argument in `gt()`.
 If we want, we can also set the `rowname_col` argument to `year`.
 This will format the "Year" column a bit differently.
@@ -481,7 +482,7 @@ Otherwise, we would get summary rows at the end of the table (using all data).
 This is also known as a "grand summary".
 
 Further, the output of the summary function had to be formatted.
-By default the output would contain two decimals.
+By default, the output would contain two decimals.
 So, we'd get numbers like `9.00`.
 Here, `fmt_number()` is the formatter that corrected that.
 But we had to tell it to use `decimals = 0`.
@@ -493,7 +494,7 @@ Frankly, they have been too large for my taste for some time now.
 
 To do so, we could set the so-called `data_row.padding` to 2 pixels.
 This is done with `tab_options()`, the premier layer to style the table[^getting_started-2].
-Similarly, there are padding options for `summary_row` and `row_group`[^getting_started-3]. And while we're at it, why not apply a pre-defined theme to our table with `opt_stylize()`.
+Similarly, there are padding options for `summary_row` and `row_group`[^getting_started-3]. And while we're at it, why not apply a pre-defined theme to our table with `opt_stylize()`?
 
 [^getting_started-2]: Basically, this is the analogue of `theme()` in `{ggplot2}`.
 

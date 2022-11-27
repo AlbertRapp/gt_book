@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Albert Rapp">
-<meta name="dcterms.date" content="2022-11-18">
+<meta name="dcterms.date" content="2022-11-27">
 
 <title>Creating beautiful tables in R with {gt}</title>
 <style>
@@ -263,7 +263,7 @@ cookieconsent.run({
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 18, 2022</p>
+      <p class="date">November 27, 2022</p>
     </div>
   </div>
   
@@ -275,24 +275,25 @@ cookieconsent.run({
 
 <section id="introduction" class="level1 unnumbered">
 <h1 class="unnumbered">Introduction</h1>
-<p><strong>This is currently still work in progress. First drafts of all Chapters are online. Feedback is welcome.</strong></p>
-<p>I used to think that tables are dull lists of numbers. But I was wrong. Tables can be beautiful &amp; engaging. And in this Quarto book, we’re going to learn how to create such tables with R. More precisely, we will learn how to use the <a href="https://gt.rstudio.com/index.html"><code>{gt}</code> package</a>.</p>
-<p><a href="getting_started.html"><span>Chapter&nbsp;1</span></a> is the starting point of our <code>{gt}</code> journey. It will cover both useful guidelines for any table and how to implement them with <code>{gt}</code>. You can think of this chapter as a quickstart guide.</p>
-<p>Afterwards, we’re learning how to add eye-catching elements like plots, icons and images to our table in <a href="fancy_stuff.html"><span>Chapter&nbsp;2</span></a>. Many of these elements are powered through the amazing <a href="https://jthomasmock.github.io/gtExtras/index.html"><code>{gtExtras}</code> package</a>. But you will also learn how to add any plot to your table. Regardless of whether it implemented in <code>{gtExtras}</code> or not.</p>
-<p>Next, we’ll talk about formatting the entries of your table in <a href="formatting.html"><span>Chapter&nbsp;3</span></a>. <code>{gt}</code> has two powerful sets of functions to get the job done, namely <code>fmt_*()</code> and <code>sub_*()</code>. These functions all work the same and are pretty easy to pick up. Hence, it’s easy to format the data in your table the way you want/need.</p>
+<p>Tables don’t have to be dull lists of numbers. If done correctly, they can, in fact, be beautiful &amp; engaging. And in this book, we’re going to learn how to create such tables with R. More precisely, we will learn how to use the <a href="https://gt.rstudio.com/index.html"><code>{gt}</code> package</a>.</p>
+<p><a href="getting_started.html"><span>Chapter&nbsp;1</span></a> is the starting point of our <code>{gt}</code> journey. It will cover useful guidelines for any table and how to implement them with <code>{gt}</code>. You can think of this chapter as a quickstart guide.</p>
+<p>Afterwards, we’re learning how to add eye-catching elements like plots, icons and images to our table in <a href="fancy_stuff.html"><span>Chapter&nbsp;2</span></a>. Many of these elements are powered through the amazing <a href="https://jthomasmock.github.io/gtExtras/index.html"><code>{gtExtras}</code> package</a>. But you will also learn how to add any plot to your table (regardless of whether it is implemented in <code>{gtExtras}</code> or not.)</p>
+<p>Next, we’ll talk about formatting the entries of your table in <a href="formatting.html"><span>Chapter&nbsp;3</span></a>. <code>{gt}</code> has two powerful sets of functions to get this job done, namely <code>fmt_*()</code> and <code>sub_*()</code>. These functions all work the same and are pretty easy to pick up. Hence, it’s easy to format the data in your table the way you want or need.</p>
 <p>In <a href="styling.html"><span>Chapter&nbsp;4</span></a>, we’re learning how to change the theme of our table. This will be a long chapter. After all, we can basically change anything about our table’s appearance.</p>
-<p>All of the knowledge that we’ve acquired in the previous chapters will culminate in <a href="case_studies.html"><span>Chapter&nbsp;5</span></a>. That’s where we will build two elaborate tables with <code>{gt}</code>.</p>
-<p>Finally, <a href="quarto_gt.html"><span>Chapter&nbsp;6</span></a> is a special chapter dedicating to the interactions between <a href="https://quarto.org/">Quarto</a> and <code>{gt}</code>. As of right now (Quarto <code>v1.2.267</code> &amp; <code>{gt}</code> <code>v0.8.0</code>), Quarto’s default theme can interact with your <code>{gt}</code> table and change its theme. But there are ways to isolate Quarto from <code>{gt}</code>. This is what you’ll learn in this chapter.</p>
+<p>All of the knowledge that we’ve acquired in the previous chapters culminate in <a href="case_studies.html"><span>Chapter&nbsp;5</span></a>. That’s where we will build elaborate tables with <code>{gt}</code>.</p>
+<p>Finally, <a href="quarto_gt.html"><span>Chapter&nbsp;6</span></a> is a special chapter dedicated to the interactions between <a href="https://quarto.org/">Quarto</a> and <code>{gt}</code>. As of right now (Quarto <code>v1.2.267</code> &amp; <code>{gt}</code> <code>v0.8.0</code>), Quarto’s default theme can interact with your <code>{gt}</code> table and change its theme. But there are ways to isolate Quarto from <code>{gt}</code>. This is what you’ll learn in this chapter.</p>
 <section id="prerequisites" class="level2">
 <h2 class="anchored" data-anchor-id="prerequisites">Prerequisites</h2>
-<p>This Quarto book is meant for people with an intermediate knowledge of R, specifically the Tidyverse. I do not expect people to know HTML/CSS for the most parts.</p>
-<p>Throughout most of the book, we’ll only to do small changes with HTML/CSS and these bits will be explained. But there will be parts in <a href="styling.html"><span>Chapter&nbsp;4</span></a> and the subsequent chapters that will talk about changing CSS styles. Feel free to skip these parts if you’re uncomfortable with CSS.</p>
+<p>This book is meant for people with an intermediate knowledge of R, specifically the Tidyverse. I do not expect people to know HTML/CSS for the most parts.</p>
+<p>Throughout most of the book, we’ll only to do small changes with HTML/CSS and these bits will be explained. But there will be parts in <a href="styling.html"><span>Chapter&nbsp;4</span></a> and the subsequent chapters that will talk about changing CSS styles. Feel free to skip these parts if you’re uncomfortable with CSS. But I’ll do my best to help you with CSS.</p>
 </section>
 <section id="about-this-book" class="level2">
 <h2 class="anchored" data-anchor-id="about-this-book">About this book</h2>
 <p>This book is completely free and the code is open-source. If you find the things you learn here useful, I’d appreciate it if you sponsor my work via <a href="https://www.buymeacoffee.com/rappa753">Buy Me Coffee</a>.</p>
-<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="rappa753" data-color="#06436e" data-emoji="☕" data-font="Lato" data-text="Support me" data-outline-color="#ffffff" data-font-color="#ffffff" data-coffee-color="#FFDD00" data-height="40px"></script>
-<p>Or if you’re interested in working with me, I’m open to freelance work. You can book an appointment with me on <a href="https://calendly.com/r-a/30min">Calendly</a>.</p>
+<div style="padding-bottom:20px;">
+<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="rappa753" data-color="#06436e" data-emoji="☕" data-font="Lato" data-text="Support this free book" data-outline-color="#ffffff" data-font-color="#ffffff" data-coffee-color="#FFDD00" data-height="40px"></script>
+</div>
+<p>Also, if you’re interested in working with me, I’m open to freelance work. You can book an appointment with me on <a href="https://calendly.com/r-a/30min">Calendly</a>.</p>
 </section>
 <section id="session-info" class="level2">
 <h2 class="anchored" data-anchor-id="session-info">Session info</h2>
@@ -309,8 +310,8 @@ cookieconsent.run({
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="do">##  collate  en_US.UTF-8</span></span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="do">##  ctype    en_US.UTF-8</span></span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="do">##  tz       Europe/Berlin</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="do">##  date     2022-11-18</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="do">##  pandoc   2.19.2 @ /usr/lib/rstudio/bin/quarto/bin/tools/ (via rmarkdown)</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="do">##  date     2022-11-27</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="do">##  pandoc   2.5 @ /usr/bin/ (via rmarkdown)</span></span>
 <span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="do">## ─ Packages ───────────────────────────────────────────────────────────────────</span></span>
 <span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="do">##  ! package        * version    date (UTC) lib source</span></span>
@@ -452,7 +453,7 @@ cookieconsent.run({
 <span id="cb1-152"><a href="#cb1-152" aria-hidden="true" tabindex="-1"></a><span class="do">##    rpart            4.1.19     2022-10-21 [2] CRAN (R 4.2.1)</span></span>
 <span id="cb1-153"><a href="#cb1-153" aria-hidden="true" tabindex="-1"></a><span class="do">##    rprojroot        2.0.3      2022-04-02 [1] CRAN (R 4.1.3)</span></span>
 <span id="cb1-154"><a href="#cb1-154" aria-hidden="true" tabindex="-1"></a><span class="do">##    rsconnect        0.8.28     2022-10-24 [1] CRAN (R 4.2.2)</span></span>
-<span id="cb1-155"><a href="#cb1-155" aria-hidden="true" tabindex="-1"></a><span class="do">##  P rstudioapi       0.14       2022-08-22 [?] CRAN (R 4.2.1)</span></span>
+<span id="cb1-155"><a href="#cb1-155" aria-hidden="true" tabindex="-1"></a><span class="do">##    rstudioapi       0.14       2022-08-22 [1] CRAN (R 4.2.1)</span></span>
 <span id="cb1-156"><a href="#cb1-156" aria-hidden="true" tabindex="-1"></a><span class="do">##    rversions        2.1.2      2022-08-31 [1] CRAN (R 4.2.1)</span></span>
 <span id="cb1-157"><a href="#cb1-157" aria-hidden="true" tabindex="-1"></a><span class="do">##    rvest            1.0.3      2022-08-19 [1] CRAN (R 4.2.1)</span></span>
 <span id="cb1-158"><a href="#cb1-158" aria-hidden="true" tabindex="-1"></a><span class="do">##    sass             0.4.2      2022-07-16 [1] CRAN (R 4.2.1)</span></span>
@@ -550,9 +551,8 @@ cookieconsent.run({
 <span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">/</span><span class="kw">)</span> <span class="ex">Checking</span> Knitr engine render......</span>
 <span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">-</span><span class="kw">)</span> <span class="ex">Checking</span> Knitr engine render......</span>
 <span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">\)</span> Checking Knitr engine render......</span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="kw">(|)</span> <span class="ex">Checking</span> Knitr engine render......</span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">/</span><span class="kw">)</span> <span class="ex">Checking</span> Knitr engine render......[2K[G</span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="ex">[✓]</span> Checking Knitr engine render......OK</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="kw">(|)</span> <span class="ex">Checking</span> Knitr engine render......[2K[G</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="ex">[✓]</span> Checking Knitr engine render......OK</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 

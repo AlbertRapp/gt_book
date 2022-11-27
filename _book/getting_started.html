@@ -267,30 +267,31 @@ cookieconsent.run({
 <p>In this chapter, we’re going to do two things:</p>
 <ol type="1">
 <li>Learn simple guidelines for better tables</li>
-<li>Implement them with {gt}</li>
+<li>Implement them with <code>{gt}</code></li>
 </ol>
-<p>Of course we will need data for that. I like penguins, so we’re going to use the fabulous <code>penguins</code> data set from <code>{palmerpenguins}</code>.</p>
+<p>And of course we will need data for that. I like penguins, so we’re going to use the fabulous <code>penguins</code> data set from <code>{palmerpenguins}</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>penguins <span class="ot">&lt;-</span> palmerpenguins<span class="sc">::</span>penguins <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(sex))</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>penguins</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="do">## # A tibble: 333 × 8</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="do">##    species island    bill_length_mm bill_depth_mm flipper_…¹ body_…² sex    year</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="do">##    &lt;fct&gt;   &lt;fct&gt;              &lt;dbl&gt;         &lt;dbl&gt;      &lt;int&gt;   &lt;int&gt; &lt;fct&gt; &lt;int&gt;</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="do">##  1 Adelie  Torgersen           39.1          18.7        181    3750 male   2007</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="do">##  2 Adelie  Torgersen           39.5          17.4        186    3800 fema…  2007</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="do">##  3 Adelie  Torgersen           40.3          18          195    3250 fema…  2007</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="do">##  4 Adelie  Torgersen           36.7          19.3        193    3450 fema…  2007</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="do">##  5 Adelie  Torgersen           39.3          20.6        190    3650 male   2007</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="do">##  6 Adelie  Torgersen           38.9          17.8        181    3625 fema…  2007</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="do">##  7 Adelie  Torgersen           39.2          19.6        195    4675 male   2007</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="do">##  8 Adelie  Torgersen           41.1          17.6        182    3200 fema…  2007</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="do">##  9 Adelie  Torgersen           38.6          21.2        191    3800 male   2007</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="do">## 10 Adelie  Torgersen           34.6          21.1        198    4400 male   2007</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="do">## # … with 323 more rows, and abbreviated variable names ¹​flipper_length_mm,</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="do">## #   ²​body_mass_g</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>penguins <span class="ot">&lt;-</span> palmerpenguins<span class="sc">::</span>penguins <span class="sc">|&gt;</span> </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(sex))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>penguins</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="do">## # A tibble: 333 × 8</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="do">##    species island    bill_length_mm bill_depth_mm flipper_…¹ body_…² sex    year</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="do">##    &lt;fct&gt;   &lt;fct&gt;              &lt;dbl&gt;         &lt;dbl&gt;      &lt;int&gt;   &lt;int&gt; &lt;fct&gt; &lt;int&gt;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="do">##  1 Adelie  Torgersen           39.1          18.7        181    3750 male   2007</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="do">##  2 Adelie  Torgersen           39.5          17.4        186    3800 fema…  2007</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="do">##  3 Adelie  Torgersen           40.3          18          195    3250 fema…  2007</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="do">##  4 Adelie  Torgersen           36.7          19.3        193    3450 fema…  2007</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="do">##  5 Adelie  Torgersen           39.3          20.6        190    3650 male   2007</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="do">##  6 Adelie  Torgersen           38.9          17.8        181    3625 fema…  2007</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="do">##  7 Adelie  Torgersen           39.2          19.6        195    4675 male   2007</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="do">##  8 Adelie  Torgersen           41.1          17.6        182    3200 fema…  2007</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="do">##  9 Adelie  Torgersen           38.6          21.2        191    3800 male   2007</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="do">## 10 Adelie  Torgersen           34.6          21.1        198    4400 male   2007</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="do">## # … with 323 more rows, and abbreviated variable names ¹​flipper_length_mm,</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="do">## #   ²​body_mass_g</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>From that data let us compute a couple of simple counts. To get started, this is probably an easy data set to put into a table.</p>
+<p>Using this data, let us count the penguins. These counts will serve as a simple data set to practice table building.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>penguin_counts <span class="ot">&lt;-</span> penguins <span class="sc">|&gt;</span> </span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year =</span> <span class="fu">as.character</span>(year)) <span class="sc">|&gt;</span> </span>
@@ -312,7 +313,7 @@ cookieconsent.run({
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="do">## 10 Adelie  Dream  male   2007     10</span></span>
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="do">## # … with 20 more rows</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>In actual table, the data would probably be rearranged a bit. There’s nothing wrong with this long (i.e.&nbsp;many rows) data format. In fact, this format is great for data analysis. But in a table that is meant to be read by humans, not machines, you’ll probably go with a wider format.</p>
+<p>In an actual table, the data would probably be rearranged a bit. There’s nothing wrong with this long (i.e.&nbsp;many rows) data format. In fact, this format is great for data analysis. But in a table that is meant to be read by humans, not machines, you’ll probably go with a wider format.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>penguin_counts_wider <span class="ot">&lt;-</span> penguin_counts <span class="sc">|&gt;</span> </span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(</span>
@@ -342,7 +343,7 @@ cookieconsent.run({
 <div id="fig-terrible-tbl" class="quarto-figure quarto-figure-center anchored page-columns page-full">
 <figure class="figure page-columns page-full">
 <p><img src="img/stupid_table_screenshot.png" class="img-fluid figure-img" style="width:90.0%"></p>
-<p></p><figcaption class="figure-caption margin-caption">Figure&nbsp;1.1: A not so sexy table of our <code>penguins_counts_wider</code> data set created by yours truly with LibreOffice Calc (spreadsheet software - double ugh. Though, compared to Excel it’s open-source. So maybe 1.5 ugh?)</figcaption><p></p>
+<p></p><figcaption class="figure-caption margin-caption">Figure&nbsp;1.1: Ugh. A not so sexy table of our <code>penguins_counts_wider</code> data set created by yours truly with LibreOffice Calc (spreadsheet software - double ugh. Though, compared to Excel it’s open-source. So maybe 1.5 ugh?)</figcaption><p></p>
 </figure>
 </div>
 <p>Ugh. This is not a sexy table. I get bored just looking at that. So let’s improve this table. To do so, here are the 6 guidelines that will, well, guide us.</p>
@@ -357,7 +358,7 @@ cookieconsent.run({
 <section id="avoid-vertical-lines" class="level2" data-number="1.1">
 <h2 data-number="1.1" class="anchored" data-anchor-id="avoid-vertical-lines"><span class="header-section-number">1.1</span> Avoid vertical lines</h2>
 <p>This is the guideline that gives you the biggest bang for your buck. The above table uses waaaay to many grid lines. Without vertical lines, the table will look less cramped.</p>
-<p>Thankfully, <code>{gt}</code> seems to live by this rule as it is implemented by default. Thus, we only need to pass our data set <code>penguin_counts_wider</code> to <code>gt()</code>. You can think of this function as the <code>ggplot()</code> analogue. It’s the starting point of any table in the <code>{gt}</code> universe.</p>
+<p>Thankfully, <code>{gt}</code> seems to live by this rule as it is implemented by default. Thus, we only need to pass our data set <code>penguin_counts_wider</code> to <code>gt()</code>. You can think of this function as the <code>ggplot()</code> analogue: It’s the starting point of any table in the <code>{gt}</code> universe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gt)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>penguin_counts_wider <span class="sc">|&gt;</span> </span>
@@ -365,7 +366,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="vvzgtjmwwm" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="bzalrcgxhc" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   
@@ -466,7 +467,7 @@ cookieconsent.run({
 </section>
 <section id="use-better-column-names" class="level2" data-number="1.2">
 <h2 data-number="1.2" class="anchored" data-anchor-id="use-better-column-names"><span class="header-section-number">1.2</span> Use better column names</h2>
-<p>To change the column names use the <code>cols_layer()</code> “layer”. Much like <code>{ggplot2}</code>, <code>{gt}</code> works with layers. To change anything about the table, we just pass the table from layer to the next. This works with piping. Armed with that knowledge, we could label the columns like we did in <a href="#fig-terrible-tbl">Figure&nbsp;<span>1.1</span></a>.</p>
+<p>To change the column names use the “layer” called <code>cols_layer()</code>. Much like <code>{ggplot2}</code>, <code>{gt}</code> works with layers. To change anything about the table, we just pass the table from layer to the next. This works with piping. Armed with that knowledge, we could label the columns like we did in <a href="#fig-terrible-tbl">Figure&nbsp;<span>1.1</span></a>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>penguin_counts_wider <span class="sc">|&gt;</span> </span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>() <span class="sc">|&gt;</span> </span>
@@ -483,7 +484,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="jctawobovs" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="wwwddamzwf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   
@@ -580,7 +581,7 @@ cookieconsent.run({
 </div>
 </div>
 </div>
-<p>But this isn’t a great way to label the columns. So let’s do something else instead. First, let us create so-called <strong>spanners</strong>. This joins columns and can be done with <code>tab_spanner()</code> layers. You’ll need one layer for each spanner.</p>
+<p>But this isn’t a great way to label the columns. So let’s do something else instead. First, let us create so-called <strong>spanners</strong>. These are joined columns and can be created with <code>tab_spanner()</code> layers. You’ll need one layer for each spanner.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>penguin_counts_wider <span class="sc">|&gt;</span> </span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>() <span class="sc">|&gt;</span> </span>
@@ -609,7 +610,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="qwnywjkfkm" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="aceeqlfbfc" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   
@@ -724,8 +725,8 @@ cookieconsent.run({
 <li><a href="https://tidyselect.r-lib.org/reference/language.html">tidyselect helpers</a></li>
 </ol>
 <p>For the <code>label</code> argument you can either just state a <code>character</code> vector or you can wrap one in <code>md()</code> to enable Markdown syntax (like <code>**bold text**</code>).</p>
-<p>Okay now we don’t really need the Species labels in the actual column names anymore. The spanners already state that for us. So, let us modify our previous code to rename the columns. To do so, let me show you a cool trick that may save you some tedious typing.</p>
-<p>First, we create a named vector that contains the actual and the desired column names.</p>
+<p>Okay, now we don’t really need the Species labels in the actual column names anymore. The spanners already state that for us. So, let us modify our previous code to rename the columns. To do so, let me show you a cool trick that may save you some tedious typing.</p>
+<p>First, we create a <strong>named</strong> vector that contains the actual and the desired column names.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>actual_colnames <span class="ot">&lt;-</span> <span class="fu">colnames</span>(penguin_counts_wider)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>actual_colnames</span>
@@ -762,7 +763,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="ngxzylotev" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="dmlidvltsa" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   
@@ -870,7 +871,7 @@ cookieconsent.run({
 </div>
 </div>
 </div>
-<p>Finally, while we’re currently changing labels, let us add an important label - the title. The <code>tab_header()</code> layer does the trick.</p>
+<p>Finally, while we’re currently changing labels, let us add one important label - the title. The <code>tab_header()</code> layer does the trick.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>penguin_counts_wider <span class="sc">|&gt;</span> </span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>() <span class="sc">|&gt;</span> </span>
@@ -894,7 +895,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="bmmolgkjzl" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="wajmfkizhw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
@@ -1009,7 +1010,7 @@ cookieconsent.run({
 </div>
 </div>
 </div>
-<p>By the same trick we could also add a caption for a Quarto document (<code>tab_caption()</code>), a footnote (<code>tab_footnote()</code>) or another source note (<code>tab_sourcenote()</code>) here. In this case it’s a bit much, though. So I won’t add them. Just know that these functions exist in case you need them. For now, let us talk about our next guideline.</p>
+<p>By the same trick we could also add a caption for a Quarto document (<code>tab_caption()</code>), a footnote (<code>tab_footnote()</code>) or another source note (<code>tab_sourcenote()</code>), In this case it’s a bit much, though. So I won’t add them. Just know that these functions exist in case you need them. For now, let us talk about our next guideline.</p>
 <p>Before we can do that, let me mention one small thing: Our spanners and headers will not change as we move along this tutorial. To avoid repeating them all the time, let me wrap them in a function.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>spanners_and_header <span class="ot">&lt;-</span> <span class="cf">function</span>(gt_tbl) {</span>
@@ -1040,7 +1041,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="vglzebxmfe" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="osnixriduw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
@@ -1170,7 +1171,7 @@ cookieconsent.run({
 <p><img src="getting_started_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
-<p>For numbers it’s the other way around. That’s because right-aligned numbers make it easy to see how many digits a number has compared to other numbers. This assumes that your numbers use a font that assign equal width to all digits (monospace fonts).</p>
+<p>For numbers it’s the other way around. That’s because right-aligned numbers make it easy to see how many digits a number has compared to other numbers. This assumes that your numbers use a font that assigns equal width to all digits (monospace fonts).</p>
 <p>So, let us align the <code>island</code> and <code>year</code> column. We can either do this by transforming the data types before even calling <code>gt()</code>. Or we use the <code>cols_align()</code> layer. Once again, this layer understands text locations and tidyselection helpers.</p>
 <div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true">Conversion</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false">Align</a></li></ul>
@@ -1188,7 +1189,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="lmruoovmsx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="olfwrxqzno" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
@@ -1318,7 +1319,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="ahegulsfcl" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="wsdkislvuj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
@@ -1440,7 +1441,7 @@ cookieconsent.run({
 <section id="use-groups-instead-of-repetitive-columns" class="level2" data-number="1.4">
 <h2 data-number="1.4" class="anchored" data-anchor-id="use-groups-instead-of-repetitive-columns"><span class="header-section-number">1.4</span> Use groups instead of repetitive columns</h2>
 <p>The <code>island</code> column is somewhat repetitive. In cases like these, I’d rather remove the column. Instead, I would group the table using additional rows. I like to think that this comes with better readability.</p>
-<p>With <code>{gt}</code> this grouping is easy. We only need to specify the <code>groupname_col</code> argument in <code>gt()</code>. If we want, we can also set the <code>rowname_col</code> argument to <code>year</code>. This will format the “Year” column a bit differently.</p>
+<p>With <code>{gt}</code>, this grouping is easy. We only need to specify the <code>groupname_col</code> argument in <code>gt()</code>. If we want, we can also set the <code>rowname_col</code> argument to <code>year</code>. This will format the “Year” column a bit differently.</p>
 <div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">Groups</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">Groups + row names</a></li></ul>
 <div class="tab-content">
@@ -1457,7 +1458,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="cfoxyxszpe" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="joeuqlgrip" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
@@ -1585,7 +1586,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="dsxsxcoyio" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="uypuqiwcrj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
@@ -1716,7 +1717,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="jznzivzdya" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="nrwsprlxay" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
@@ -1848,7 +1849,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="rlztouyshx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="lgeobbnxey" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
@@ -1992,7 +1993,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="lsfiwmgvmk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="jcvbxpfixv" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #A8A8A8; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #A8A8A8; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
@@ -2150,9 +2151,9 @@ cookieconsent.run({
 </div>
 <p>The <code>summary_rows()</code> function works with a named list of functions (one function for each summary). As you’ve seen, you can create one using <code>list('Name' = ~fct(.))</code>. In this case, <code>.</code> represents the column data. All other arguments can be named as usual. For example, you could do something like <code>~mean(., na.rm = TRUE)</code>.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
 <p>Notice that I had to set <code>groups = TRUE</code>. Otherwise, we would get summary rows at the end of the table (using all data). This is also known as a “grand summary”.</p>
-<p>Further, the output of the summary function had to be formatted. By default the output would contain two decimals. So, we’d get numbers like <code>9.00</code>. Here, <code>fmt_number()</code> is the formatter that corrected that. But we had to tell it to use <code>decimals = 0</code>. We’ll learn more about the <code>fmt_*()</code> family in <a href="formatting.html#sec-fmt-functions"><span>Section&nbsp;3.1</span></a>.</p>
+<p>Further, the output of the summary function had to be formatted. By default, the output would contain two decimals. So, we’d get numbers like <code>9.00</code>. Here, <code>fmt_number()</code> is the formatter that corrected that. But we had to tell it to use <code>decimals = 0</code>. We’ll learn more about the <code>fmt_*()</code> family in <a href="formatting.html#sec-fmt-functions"><span>Section&nbsp;3.1</span></a>.</p>
 <p>Now that we’ve added more information to the table, it became quite long. We can amend that by reducing the row heights. Frankly, they have been too large for my taste for some time now.</p>
-<p>To do so, we could set the so-called <code>data_row.padding</code> to 2 pixels. This is done with <code>tab_options()</code>, the premier layer to style the table<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Similarly, there are padding options for <code>summary_row</code> and <code>row_group</code><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. And while we’re at it, why not apply a pre-defined theme to our table with <code>opt_stylize()</code>.</p>
+<p>To do so, we could set the so-called <code>data_row.padding</code> to 2 pixels. This is done with <code>tab_options()</code>, the premier layer to style the table<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Similarly, there are padding options for <code>summary_row</code> and <code>row_group</code><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. And while we’re at it, why not apply a pre-defined theme to our table with <code>opt_stylize()</code>?</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>penguin_counts_wider <span class="sc">|&gt;</span> </span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
@@ -2182,7 +2183,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="lzkzgablgj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="wbwwruvrrb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #5F5F5F; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #5F5F5F; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
@@ -2375,7 +2376,7 @@ cookieconsent.run({
 <div class="cell-output-display">
 
 <div style="all:initial" ;="">
-<div id="ylyjaxoibz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="kftgmffbcf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   <table class="gt_table" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif; display: table; border-collapse: collapse; margin-left: auto; margin-right: auto; color: #333333; font-size: 16px; font-weight: normal; font-style: normal; background-color: #FFFFFF; width: auto; border-top-style: solid; border-top-width: 2px; border-top-color: #5F5F5F; border-right-style: none; border-right-width: 2px; border-right-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #5F5F5F; border-left-style: none; border-left-width: 2px; border-left-color: #D3D3D3;" bgcolor="#FFFFFF">
   <thead class="gt_header">
